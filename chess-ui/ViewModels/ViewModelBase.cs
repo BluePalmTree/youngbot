@@ -1,7 +1,8 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 
-namespace chess_bot.ViewModels;
-
-public abstract class ViewModelBase : ObservableObject
+namespace chess_ui.ViewModels
 {
+    public abstract class ViewModelBase : ObservableObject
+    {
+    }
 }

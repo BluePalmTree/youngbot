@@ -1,6 +1,7 @@
-﻿namespace chess_engine;
-
-public class Class1
+﻿namespace chess_engine
 {
+    public class Class1
+    {
 
+    }
 }

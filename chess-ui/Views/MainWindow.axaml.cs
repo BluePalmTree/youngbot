@@ -1,11 +1,12 @@
 using Avalonia.Controls;
 
-namespace chess_bot.Views;
-
-public partial class MainWindow : Window
+namespace chess_ui.Views
 {
-    public MainWindow()
+    public partial class MainWindow : Window
     {
-        InitializeComponent();
+        public MainWindow()
+        {
+            InitializeComponent();
+        }
     }
 }

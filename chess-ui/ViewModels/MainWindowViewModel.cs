@@ -1,6 +1,7 @@
-﻿namespace chess_bot.ViewModels;
-
-public partial class MainWindowViewModel : ViewModelBase
+﻿namespace chess_ui.ViewModels
 {
-    public string Greeting { get; } = "Welcome to Avalonia!";
+    public partial class MainWindowViewModel : ViewModelBase
+    {
+        public string Greeting { get; } = "Welcome to Avalonia!";
+    }
 }
