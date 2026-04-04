@@ -3,9 +3,10 @@
         xmlns:vm="using:chess_ui.ViewModels"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+        mc:Ignorable="d" Width="800" Height="800"
         x:Class="chess_ui.Views.MainWindow"
         x:DataType="vm:MainWindowViewModel"
+        x:Name="mainWnd"
         Icon="/Assets/avalonia-logo.ico"
         Title="chess_ui">
 
@@ -14,8 +15,4 @@
              to set the actual DataContext for runtime, set the DataContext property in code (look at App.axaml.cs) -->
         <vm:MainWindowViewModel/>
     </Design.DataContext>
-
-    <Button HorizontalAlignment="Center">Calculate</Button>
-
-
 </Window>
