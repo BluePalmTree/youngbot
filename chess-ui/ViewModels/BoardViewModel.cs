@@ -75,5 +75,18 @@ namespace chess_ui.ViewModels
 
         // columns
         public string[] Files { get; }
+
+
+
+
+        public void MovePiece(byte fromIndex, byte toIndex)
+        {
+            var from = Squares[fromIndex];
+            var to = Squares[toIndex];
+
+            to.Piece = from.Piece;
+            from.Piece = null;
+            from.IsGhost = false;
+        }
     }
 }

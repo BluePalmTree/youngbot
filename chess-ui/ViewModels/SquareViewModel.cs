@@ -20,5 +20,8 @@ namespace chess_ui.ViewModels
 
         [ObservableProperty]
         private bool _isSelected;
+
+        [ObservableProperty]
+        private bool _isGhost;
     }
 }

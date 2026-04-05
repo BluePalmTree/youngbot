@@ -14,10 +14,13 @@ Height="800"
 x:DataType="vm:BoardViewModel"
 Background="WhiteSmoke"
 Icon="/Assets/avalonia-logo.ico"
+PointerMoved="OnPointerMoved"
+PointerReleased="OnPointerReleased"
 mc:Ignorable="d">
     <Window.Resources>
         <converters:SquareBackgroundConverter x:Key="SquareBackgroundConverter" />
         <converters:PieceToImageConverter x:Key="PieceToImageConverter" />
+        <converters:BoolToOpacityConverter x:Key="BoolToOpacityConverter" />
     </Window.Resources>
 
     <Design.DataContext>
@@ -60,7 +63,7 @@ mc:Ignorable="d">
         </ItemsControl>
 
         <!-- Board -->
-        <ItemsControl Grid.Column="1" Grid.Row="1" ItemsSource="{Binding Squares}">
+        <ItemsControl x:Name="BoardItems" Grid.Column="1" Grid.Row="1" ItemsSource="{Binding Squares}">
             <ItemsControl.ItemsPanel>
                 <ItemsPanelTemplate>
                     <UniformGrid Columns="8" Rows="8"></UniformGrid>
@@ -69,11 +72,14 @@ mc:Ignorable="d">
 
             <ItemsControl.ItemTemplate>
                 <DataTemplate>
-                    <Border Background="{Binding IsLight, Converter={StaticResource SquareBackgroundConverter}, Mode=OneWay}">
+                    <Border Background="{Binding IsLight, Converter={StaticResource SquareBackgroundConverter}, Mode=OneWay}"
+                            PointerPressed="OnPointerPressed">
                         <Grid>
-                            <TextBlock Text="{Binding Index}" HorizontalAlignment="Center" />
+                            <TextBlock Text="{Binding Index}" HorizontalAlignment="Center" VerticalAlignment="Bottom" />
                             <Image Width="64" Height="64"
-                                   Source="{Binding Piece, Converter={StaticResource PieceToImageConverter}, Mode=OneWay}"></Image>
+                                   Source="{Binding Piece, Converter={StaticResource PieceToImageConverter}, Mode=OneWay}"
+                                   Opacity="{Binding IsGhost, Converter={StaticResource BoolToOpacityConverter}}"
+                                   IsHitTestVisible="False" />
                         </Grid>
                     </Border>
                 </DataTemplate>
