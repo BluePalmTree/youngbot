@@ -1,18 +1,114 @@
-<Window xmlns="https://github.com/avaloniaui"
-        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        xmlns:vm="using:chess_ui.ViewModels"
-        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        mc:Ignorable="d" Width="800" Height="800"
-        x:Class="chess_ui.Views.MainWindow"
-        x:DataType="vm:MainWindowViewModel"
-        x:Name="mainWnd"
-        Icon="/Assets/avalonia-logo.ico"
-        Title="chess_ui">
+<Window
+x:Class="chess_ui.Views.MainWindow"
+xmlns="https://github.com/avaloniaui"
+xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+xmlns:svg="clr-namespace:Avalonia.Svg.Skia;assembly=Svg.Controls.Skia.Avalonia"
+xmlns:vm="using:chess_ui.ViewModels"
+xmlns:converters="using:chess_ui.Converters"
+x:Name="mainWnd"
+Title="chess_ui"
+Width="800"
+Height="800"
+x:DataType="vm:BoardViewModel"
+Background="WhiteSmoke"
+Icon="/Assets/avalonia-logo.ico"
+mc:Ignorable="d">
+    <Window.Resources>
+        <converters:SquareBackgroundConverter x:Key="SquareBackgroundConverter" />
+        <converters:PieceToImageConverter x:Key="PieceToImageConverter" />
+    </Window.Resources>
 
     <Design.DataContext>
-        <!-- This only sets the DataContext for the previewer in an IDE,
-             to set the actual DataContext for runtime, set the DataContext property in code (look at App.axaml.cs) -->
-        <vm:MainWindowViewModel/>
+        <!--
+        This only sets the DataContext for the previewer in an IDE,
+        to set the actual DataContext for runtime, set the DataContext property in code (look at App.axaml.cs)
+        -->
+        <vm:BoardViewModel />
     </Design.DataContext>
+
+    <Grid ColumnDefinitions="80,Auto,80" RowDefinitions="80,Auto,80">
+        <ItemsControl Grid.Row="0" Grid.Column="1" ItemsSource="{Binding Files}">
+            <ItemsControl.ItemsPanel>
+                <ItemsPanelTemplate>
+                    <StackPanel Orientation="Horizontal"/>
+                </ItemsPanelTemplate>
+            </ItemsControl.ItemsPanel>
+            <ItemsControl.ItemTemplate>
+                <DataTemplate>
+                    <Border Width="80" Height="80">
+                        <TextBlock Text="{Binding}" Foreground="Black" VerticalAlignment="Center" HorizontalAlignment="Center"></TextBlock>
+                    </Border>
+                </DataTemplate>
+            </ItemsControl.ItemTemplate>
+        </ItemsControl>
+
+        <ItemsControl Grid.Row="1" Grid.Column="0" ItemsSource="{Binding Ranks}">
+            <ItemsControl.ItemsPanel>
+                <ItemsPanelTemplate>
+                    <StackPanel Orientation="Vertical"/>
+                </ItemsPanelTemplate>
+            </ItemsControl.ItemsPanel>
+            <ItemsControl.ItemTemplate>
+                <DataTemplate>
+                    <Border Width="80" Height="80">
+                        <TextBlock Text="{Binding}" Foreground="Black" VerticalAlignment="Center" HorizontalAlignment="Center"></TextBlock>
+                    </Border>
+                </DataTemplate>
+            </ItemsControl.ItemTemplate>
+        </ItemsControl>
+
+        <!-- Board -->
+        <ItemsControl Grid.Column="1" Grid.Row="1" ItemsSource="{Binding Squares}">
+            <ItemsControl.ItemsPanel>
+                <ItemsPanelTemplate>
+                    <UniformGrid Columns="8" Rows="8"></UniformGrid>
+                </ItemsPanelTemplate>
+            </ItemsControl.ItemsPanel>
+
+            <ItemsControl.ItemTemplate>
+                <DataTemplate>
+                    <Border Background="{Binding IsLight, Converter={StaticResource SquareBackgroundConverter}, Mode=OneWay}">
+                        <Grid>
+                            <TextBlock Text="{Binding Index}" HorizontalAlignment="Center" />
+                            <Image Width="64" Height="64"
+                                   Source="{Binding Piece, Converter={StaticResource PieceToImageConverter}, Mode=OneWay}"></Image>
+                        </Grid>
+                    </Border>
+                </DataTemplate>
+            </ItemsControl.ItemTemplate>
+        </ItemsControl>
+
+
+        <ItemsControl Grid.Row="1" Grid.Column="2" ItemsSource="{Binding Ranks}">
+            <ItemsControl.ItemsPanel>
+                <ItemsPanelTemplate>
+                    <StackPanel Orientation="Vertical"/>
+                </ItemsPanelTemplate>
+            </ItemsControl.ItemsPanel>
+            <ItemsControl.ItemTemplate>
+                <DataTemplate>
+                    <Border Width="80" Height="80">
+                        <TextBlock Text="{Binding}" Foreground="Black" VerticalAlignment="Center" HorizontalAlignment="Center"></TextBlock>
+                    </Border>
+                </DataTemplate>
+            </ItemsControl.ItemTemplate>
+        </ItemsControl>
+
+        <ItemsControl Grid.Row="2" Grid.Column="1" ItemsSource="{Binding Files}">
+            <ItemsControl.ItemsPanel>
+                <ItemsPanelTemplate>
+                    <StackPanel Orientation="Horizontal"/>
+                </ItemsPanelTemplate>
+            </ItemsControl.ItemsPanel>
+            <ItemsControl.ItemTemplate>
+                <DataTemplate>
+                    <Border Width="80" Height="80">
+                        <TextBlock Text="{Binding}" Foreground="Black" VerticalAlignment="Center" HorizontalAlignment="Center"></TextBlock>
+                    </Border>
+                </DataTemplate>
+            </ItemsControl.ItemTemplate>
+        </ItemsControl>
+    </Grid>
 </Window>

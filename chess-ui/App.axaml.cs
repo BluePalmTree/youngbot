@@ -25,7 +25,7 @@ namespace chess_ui
                 DisableAvaloniaDataAnnotationValidation();
                 desktop.MainWindow = new MainWindow
                 {
-                    DataContext = new MainWindowViewModel(),
+                    DataContext = new BoardViewModel(),
                 };
             }
 
