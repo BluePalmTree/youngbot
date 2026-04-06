@@ -9,7 +9,7 @@ namespace chess_ui.Converters
     {
         public object? Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
         {
-            if (value is string piece)
+            if (value is string piece && piece.Length > 0)
             {
                 var source = SvgSource.Load($"avares://chess-ui/Assets/pieces/{piece}.svg", baseUri: null);
 

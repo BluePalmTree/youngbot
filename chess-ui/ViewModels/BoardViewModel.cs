@@ -1,4 +1,8 @@
 using System.Collections.ObjectModel;
+using System.Diagnostics;
+using Avalonia.Controls;
+using chess_engine.Models;
+using chess_ui.Helpers;
 using CommunityToolkit.Mvvm.ComponentModel;
 
 namespace chess_ui.ViewModels
@@ -6,6 +10,10 @@ namespace chess_ui.ViewModels
     public partial class BoardViewModel : ViewModelBase
     {
         private const byte BoardSize = 8;
+        private Board _board;
+
+        public string[] Ranks { get; } // rows        
+        public string[] Files { get; } // columns
 
         public BoardViewModel()
         {
@@ -19,67 +27,25 @@ namespace chess_ui.ViewModels
             {
                 for (int c = 0; c < BoardSize; c++)
                 {
-                    string? piece;
-                    if (r == 1)
-                    {
-                        piece = "bpa";
-                    }
-                    else if (r == 0)
-                    {
-                        if (c == 0 || c == BoardSize - 1)
-                            piece = "bro";
-                        else if (c == 1 || c == BoardSize - 2)
-                            piece = "bkn";
-                        else if (c == 2 || c == BoardSize - 3)
-                            piece = "bbi";
-                        else if (c == 3)
-                            piece = "bqu";
-                        else if (c == 4)
-                            piece = "bki";
-                        else
-                            piece = null;
-                    }
-                    else if (r == 6)
-                        piece = "wpa";
-                    else if (r == 7)
-                    {
-                        if (c == 0 || c == BoardSize - 1)
-                            piece = "wro";
-                        else if (c == 1 || c == BoardSize - 2)
-                            piece = "wkn";
-                        else if (c == 2 || c == BoardSize - 3)
-                            piece = "wbi";
-                        else if (c == 3)
-                            piece = "wqu";
-                        else if (c == 4)
-                            piece = "wki";
-                        else
-                            piece = null;
-                    }
-                    else
-                        piece = null;
-
-
-                    sq[i] = new SquareViewModel(i, (r + c) % 2 == 0, piece);
+                    sq[i] = new SquareViewModel(i, Board.IndexOf(c, r), (r + c) % 2 == 0);
                     i++;
                 }
             }
             _squares = new ObservableCollection<SquareViewModel>(sq);
+
+            _board = Board.DefaultStartPosition();
+            SyncFromBoard();
         }
 
         [ObservableProperty]
         private ObservableCollection<SquareViewModel> _squares;
 
-        // rows
-        public string[] Ranks { get; }
-
-        // columns
-        public string[] Files { get; }
 
 
 
 
-        public void MovePiece(byte fromIndex, byte toIndex)
+
+        public void MovePiece(int fromIndex, int toIndex)
         {
             var from = Squares[fromIndex];
             var to = Squares[toIndex];
@@ -87,6 +53,25 @@ namespace chess_ui.ViewModels
             to.Piece = from.Piece;
             from.Piece = null;
             from.IsGhost = false;
+        }
+
+
+
+
+
+        private void SyncFromBoard()
+        {
+            for (int rank = 0; rank < BoardSize; rank++)
+            {
+                for (int file = 0; file < BoardSize; file++)
+                {
+                    int boardIndex = Board.IndexOf(file, rank);
+                    int uiIndex = (7 - rank) * 8 + file;
+                    Debug.WriteLine($"Rank: {rank:00} File: {file:00} BoardIndex: {boardIndex:00} UiIndex: {uiIndex:00} Code: {PieceCodeMapper.ToCode(_board.Squares[boardIndex])} Piece: {_board.Squares[boardIndex]:b}");
+                    Squares[uiIndex].Piece = PieceCodeMapper.ToCode(_board.Squares[boardIndex]);
+                    Squares[uiIndex].BoardIndex = boardIndex;
+                }
+            }
         }
     }
 }

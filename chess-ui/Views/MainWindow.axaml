@@ -75,7 +75,10 @@ mc:Ignorable="d">
                     <Border Background="{Binding IsLight, Converter={StaticResource SquareBackgroundConverter}, Mode=OneWay}"
                             PointerPressed="OnPointerPressed">
                         <Grid>
-                            <TextBlock Text="{Binding Index}" HorizontalAlignment="Center" VerticalAlignment="Bottom" />
+                            <TextBlock Text="{Binding UiIndex}" Foreground="Purple"
+                                       HorizontalAlignment="Left" VerticalAlignment="Top" />
+                            <TextBlock Text="{Binding BoardIndex}" Foreground="Green"
+                                       HorizontalAlignment="Left" VerticalAlignment="Bottom" />
                             <Image Width="64" Height="64"
                                    Source="{Binding Piece, Converter={StaticResource PieceToImageConverter}, Mode=OneWay}"
                                    Opacity="{Binding IsGhost, Converter={StaticResource BoolToOpacityConverter}}"

@@ -5,6 +5,7 @@ using Avalonia.Controls.Presenters;
 using Avalonia.Controls.Primitives; // AdornerLayer
 using Avalonia.Input;
 using Avalonia.Layout;
+using Avalonia.Media;
 using Avalonia.Media.Imaging;
 using Avalonia.Svg.Skia;
 using chess_ui.ViewModels;
@@ -13,6 +14,9 @@ namespace chess_ui.Views
 {
     public partial class MainWindow : Window
     {
+        private Border? _selectedBorder;
+
+
         public MainWindow()
         {
             InitializeComponent();
@@ -30,8 +34,21 @@ namespace chess_ui.Views
         private void OnPointerPressed(object? sender, PointerPressedEventArgs e)
         {
             if (sender is not Border border) return;
+
+            if (_selectedBorder is not null)
+            {
+                _selectedBorder.BorderBrush = null;
+                _selectedBorder.BorderThickness = new Thickness(0);
+                _selectedBorder = null;
+            }
+
+            border.BorderBrush = Brushes.Red;
+            border.BorderThickness = new Thickness(2);
+            _selectedBorder = border;
+
+
             if (border.DataContext is not SquareViewModel sq) return;
-            if (sq.Piece is null) return;           // empty square — nothing to drag
+            if (string.IsNullOrWhiteSpace(sq.Piece)) return;           // empty square — nothing to drag
 
             _dragSource = sq;
             sq.IsGhost = true;                     // hide piece at source
@@ -99,7 +116,7 @@ namespace chess_ui.Views
             if (target is not null && target != _dragSource)
             {
                 var vm = (BoardViewModel)DataContext!;
-                vm.MovePiece(_dragSource.Index, target.Index);
+                vm.MovePiece(_dragSource.UiIndex, target.UiIndex);
             }
             else
             {
@@ -155,7 +172,7 @@ namespace chess_ui.Views
                 var topLeft = boardControl.TranslatePoint(bounds.TopLeft, this);
                 if (topLeft is null) continue;
 
-                Debug.WriteLine($"Square {sq.Index:00} | Top-Left: x:{topLeft.Value.X:000} y:{topLeft.Value.Y:000}");
+                //Debug.WriteLine($"Square {sq.UiIndex:00} | Top-Left: x:{topLeft.Value.X:000} y:{topLeft.Value.Y:000}");
 
                 var rect = new Rect(topLeft.Value, bounds.Size);
                 if (rect.Contains(windowPoint))

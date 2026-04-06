@@ -4,16 +4,18 @@ namespace chess_ui.ViewModels
 {
     public partial class SquareViewModel : ViewModelBase
     {
-        public SquareViewModel(byte index, bool isLight, string? piece = null)
+        public int UiIndex { get; }
+        public bool IsLight { get; }
+
+        public SquareViewModel(int uiIndex, int boardIndex, bool isLight)
         {
-            Index = index;
+            UiIndex = uiIndex;
             IsLight = isLight;
-            Piece = piece;
+            _boardIndex = boardIndex;
         }
 
-
-        public byte Index { get; }
-        public bool IsLight { get; }
+        [ObservableProperty]
+        private int _boardIndex;
 
         [ObservableProperty]
         private string? _piece;
@@ -23,5 +25,8 @@ namespace chess_ui.ViewModels
 
         [ObservableProperty]
         private bool _isGhost;
+
+        [ObservableProperty]
+        private bool _isHighlighted;
     }
 }
