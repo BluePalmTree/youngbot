@@ -2,10 +2,9 @@ using System.Diagnostics;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Presenters;
-using Avalonia.Controls.Primitives; // AdornerLayer
+using Avalonia.Controls.Primitives;
 using Avalonia.Input;
 using Avalonia.Layout;
-using Avalonia.Media;
 using Avalonia.Media.Imaging;
 using Avalonia.Svg.Skia;
 using chess_ui.ViewModels;
@@ -14,21 +13,22 @@ namespace chess_ui.Views
 {
     public partial class MainWindow : Window
     {
-        private Border? _selectedBorder;
-
-
         public MainWindow()
         {
             InitializeComponent();
         }
 
         #region Drag & Drop Piece
+
+        private const double DragThreshold = 4.0;
+
         // ── drag state ────────────────────────────────────────────────
         private SquareViewModel? _dragSource;
-        private Image? _ghost;          // the floating image
-        private Canvas? _adornerCanvas;  // lives in AdornerLayer
-        private Point _grabOffset;     // cursor offset within the piece
-
+        private Image? _ghost; // the floating image
+        private Canvas? _adornerCanvas; // lives in AdornerLayer
+        private Point _grabOffset; // cursor offset within the piece
+        private Point _pressPosition; // where the mouse went down
+        private bool _dragging; // true once threshol is crossed
 
         // ── 1. Initiate drag ─────────────────────────────────────────
         private void OnPointerPressed(object? sender, PointerPressedEventArgs e)
@@ -38,86 +38,99 @@ namespace chess_ui.Views
             if (string.IsNullOrWhiteSpace(sq.Piece)) return;
 
             _dragSource = sq;
+
             // Clear old selection highlight, set new one
             var vm = (BoardViewModel)DataContext!;
             foreach (var s in vm.Squares)
                 s.IsSelected = false;
-            sq.IsSelected = true;
-            sq.IsGhost = true; // hide piece at source
 
-            // Build ghost image            
-            var svgSrc = SvgSource.Load($"avares://chess-ui/Assets/pieces/{sq.Piece}.svg", baseUri: null);
-            var svgImage = new SvgImage { Source = svgSrc };
+            //sq.IsSelected = true;
+            vm.SelectSquare(sq.UiIndex);
 
-            var cull = svgSrc.Picture!.CullRect;
-            var src = new Rect(cull.Left, cull.Top, cull.Width, cull.Height);
+            _pressPosition = e.GetPosition(this);
+            _dragging = false;
 
-            var bitmap = new RenderTargetBitmap(new PixelSize(64, 64), new Vector(96, 96));
-            using (var ctx = bitmap.CreateDrawingContext())
-            {
-                ((Avalonia.Media.IImage)svgImage).Draw(ctx, src, new Rect(0, 0, 64, 64));
-            }
-
-            _ghost = new Image
-            {
-                Source = bitmap,
-                Opacity = 0.65,
-                Width = 64,
-                Height = 64,
-                IsHitTestVisible = false,
-                HorizontalAlignment = HorizontalAlignment.Left,
-                VerticalAlignment = VerticalAlignment.Top,
-            };
-
-            // Place ghost in AdornerLayer (floats above everything)
-            var boardControl = this.FindControl<ItemsControl>("BoardItems");
-            var layer = AdornerLayer.GetAdornerLayer(boardControl!);
-            if (layer is not null)
-            {
-                _adornerCanvas = new Canvas { IsHitTestVisible = false };
-                _adornerCanvas.Children.Add(_ghost);
-                AdornerLayer.SetAdornedElement(_adornerCanvas, this);
-                layer.Children.Add(_adornerCanvas);
-            }
-
-            // Centre ghost on cursor
-            var pos = e.GetPosition(this);
-            _grabOffset = new Point(32, 32);
-            MoveGhost(pos);
-
-            e.Pointer.Capture(this); // receive Move/Released even outside window
+            e.Pointer.Capture(this);
         }
 
         // ── 2. Move ghost ─────────────────────────────────────────────
         private void OnPointerMoved(object? sender, PointerEventArgs e)
         {
-            if (_ghost is null) return;
-            MoveGhost(e.GetPosition(this));
+            if (_dragSource is null) return;
+
+            var pos = e.GetPosition(this);
+
+            if (!_dragging)
+            {
+                var dx = pos.X - _pressPosition.X;
+                var dy = pos.Y - _pressPosition.Y;
+                if (dx * dx + dy * dy < DragThreshold * DragThreshold) return;
+
+                // Threshold crossed — start the drag
+                _dragging = true;
+                _dragSource.IsGhost = true;
+
+                var svgSrc = SvgSource.Load($"avares://chess-ui/Assets/pieces/{_dragSource.Piece}.svg", baseUri: null);
+                var svgImage = new SvgImage { Source = svgSrc };
+                var cull = svgSrc.Picture!.CullRect;
+                var src = new Rect(cull.Left, cull.Top, cull.Width, cull.Height);
+
+                var bitmap = new RenderTargetBitmap(new PixelSize(64, 64), new Vector(96, 96));
+                using (var ctx = bitmap.CreateDrawingContext())
+                    ((Avalonia.Media.IImage)svgImage).Draw(ctx, src, new Rect(0, 0, 64, 64));
+
+                _ghost = new Image
+                {
+                    Source = bitmap,
+                    Opacity = 0.65,
+                    Width = 64,
+                    Height = 64,
+                    IsHitTestVisible = false,
+                    HorizontalAlignment = HorizontalAlignment.Left,
+                    VerticalAlignment = VerticalAlignment.Top,
+                };
+
+                var boardControl = this.FindControl<ItemsControl>("BoardItems");
+                var layer = AdornerLayer.GetAdornerLayer(boardControl!);
+                if (layer is not null)
+                {
+                    _adornerCanvas = new Canvas { IsHitTestVisible = false };
+                    _adornerCanvas.Children.Add(_ghost);
+                    AdornerLayer.SetAdornedElement(_adornerCanvas, this);
+                    layer.Children.Add(_adornerCanvas);
+                }
+
+                _grabOffset = new Point(32, 32);
+            }
+
+            MoveGhost(pos);
         }
 
         // ── 3. Drop ───────────────────────────────────────────────────
         private void OnPointerReleased(object? sender, PointerReleasedEventArgs e)
         {
-            if (_dragSource is null || _ghost is null) return;
+            if (_dragSource is null) return;
 
-            RemoveGhost();
-
-            var dropPos = e.GetPosition(this);
-            var target = HitTestSquare(dropPos);
-
-            if (target is not null && target != _dragSource)
+            if (_dragging)
             {
-                var vm = (BoardViewModel)DataContext!;
-                vm.MovePiece(_dragSource.UiIndex, target.UiIndex);
-            }
-            else
-            {
-                _dragSource.IsGhost = false; // snap back — illegal or same square
-                _dragSource.IsSelected = false;
+                RemoveGhost();
+
+                var dropPos = e.GetPosition(this);
+                var target = HitTestSquare(dropPos);
+
+                if (target is not null && target != _dragSource)
+                {
+                    var vm = (BoardViewModel)DataContext!;
+                    vm.MovePiece(_dragSource.UiIndex, target.UiIndex);
+                }
+                else
+                {
+                    _dragSource.IsGhost = false;
+                }
             }
 
             _dragSource = null;
-            //e.Pointer.Release();
+            _dragging = false;
         }
 
         // ── Helpers ───────────────────────────────────────────────────
