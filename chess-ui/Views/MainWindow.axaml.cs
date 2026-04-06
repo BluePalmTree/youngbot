@@ -121,7 +121,8 @@ namespace chess_ui.Views
                 if (target is not null && target != _dragSource)
                 {
                     var vm = (BoardViewModel)DataContext!;
-                    vm.MovePiece(_dragSource.UiIndex, target.UiIndex);
+                    if (!vm.TryMovePiece(_dragSource.UiIndex, target.UiIndex))
+                        _dragSource.IsGhost = false;
                 }
                 else
                 {

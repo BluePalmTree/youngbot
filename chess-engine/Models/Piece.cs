@@ -23,6 +23,7 @@ namespace chess_engine.Models
         public static int TypeOf(int piece) => piece & TypeMask;
         public static int ColorOf(int piece) => piece & ColorMask;
         public static bool IsColor(int piece, int color) => (piece & ColorMask) == color && piece != None;
+        public static bool IsSlidingPiece(int piece) => TypeOf(piece) == Bishop || TypeOf(piece) == Rook || TypeOf(piece) == Queen;
 
         // Concrete pieces (combine with |)
         // e.g. White | Pawn, Black | King

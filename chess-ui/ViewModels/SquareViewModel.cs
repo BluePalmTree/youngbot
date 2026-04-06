@@ -29,5 +29,8 @@ namespace chess_ui.ViewModels
 
         [ObservableProperty]
         private bool _isHighlighted;
+
+        [ObservableProperty]
+        private bool _isValidMoveTarget;
     }
 }

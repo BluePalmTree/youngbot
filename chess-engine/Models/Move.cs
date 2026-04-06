@@ -23,6 +23,11 @@ namespace chess_engine.Models
         public bool IsPromotion => Flag is
             MoveFlag.PromoteQueen or MoveFlag.PromoteRook or
             MoveFlag.PromoteBishop or MoveFlag.PromoteKnight;
+
+        public override string ToString()
+        {
+            return $"{From}->{To}";
+        }
     }
 
 

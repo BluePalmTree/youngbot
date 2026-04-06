@@ -1,3 +1,5 @@
+using chess_engine.Helpers;
+
 namespace chess_engine.Models
 {
     public struct Board
@@ -69,6 +71,21 @@ namespace chess_engine.Models
                 }
             }
 
+            MoveGenerator.PrecomputedMoveData();
+            MoveGenerator.GenerateMoves(board);
+
+            return board;
+        }
+
+        public static Board Update(Board board, int from, int to)
+        {
+            board.Squares[to] = board.Squares[from];
+            board.Squares[from] = Piece.None;
+
+            board.ColorToMove = board.ColorToMove == Piece.White ? Piece.Black : Piece.White;
+
+            MoveGenerator.GenerateMoves(board);
+
             return board;
         }
 
@@ -77,6 +94,13 @@ namespace chess_engine.Models
         public static int FileOf(int index) => index % 8;
         public static int RankOf(int index) => index / 8;
         public static int ToUiIndex(int rank, int file) => (7 - rank) * 8 + file;
+        public static int ToUiIndex(int uiIndex)
+        {
+            var rank = RankOf(uiIndex);
+            var file = FileOf(uiIndex);
+
+            return ToUiIndex(rank, file);
+        }
         public static int FromUiIndex(int uiIndex)
         {
             var rank = 7 - RankOf(uiIndex); // flip rank: UI row 0 = engine rank 7

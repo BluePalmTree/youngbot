@@ -78,10 +78,12 @@ mc:Ignorable="d">
                             <!-- Yellow highlight overlay (last move + selected) -->
                             <Border Background="#60FFD700" IsHitTestVisible="False"
                                     IsVisible="{Binding IsHighlighted}" />
-                            <Border Background="#60FFD700" IsHitTestVisible="False"
+                            <Border Background="#3c1aff6d" IsHitTestVisible="False"
                                     IsVisible="{Binding IsSelected}" />
                             <!-- <TextBlock Text="{Binding UiIndex}" Foreground="Purple"
                             HorizontalAlignment="Left" VerticalAlignment="Top" /> -->
+                            <Border Background="#ff6060" Opacity="0.70" IsHitTestVisible="False"
+                                    IsVisible="{Binding IsValidMoveTarget}" />
                             <TextBlock Text="{Binding EngineIndex}" Foreground="Green"
                                        HorizontalAlignment="Left" VerticalAlignment="Bottom" />
                             <Image Width="64" Height="64"
