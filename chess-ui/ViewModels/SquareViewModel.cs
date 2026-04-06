@@ -7,15 +7,16 @@ namespace chess_ui.ViewModels
         public int UiIndex { get; }
         public bool IsLight { get; }
 
-        public SquareViewModel(int uiIndex, int boardIndex, bool isLight)
+        public SquareViewModel(int uiIndex, bool isLight)
         {
             UiIndex = uiIndex;
             IsLight = isLight;
-            _boardIndex = boardIndex;
+            _isSelected = false;
+            _isHighlighted = false;
         }
 
         [ObservableProperty]
-        private int _boardIndex;
+        private int _engineIndex;
 
         [ObservableProperty]
         private string? _piece;

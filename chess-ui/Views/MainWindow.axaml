@@ -75,9 +75,14 @@ mc:Ignorable="d">
                     <Border Background="{Binding IsLight, Converter={StaticResource SquareBackgroundConverter}, Mode=OneWay}"
                             PointerPressed="OnPointerPressed">
                         <Grid>
-                            <TextBlock Text="{Binding UiIndex}" Foreground="Purple"
-                                       HorizontalAlignment="Left" VerticalAlignment="Top" />
-                            <TextBlock Text="{Binding BoardIndex}" Foreground="Green"
+                            <!-- Yellow highlight overlay (last move + selected) -->
+                            <Border Background="#60FFD700" IsHitTestVisible="False"
+                                    IsVisible="{Binding IsHighlighted}" />
+                            <Border Background="#60FFD700" IsHitTestVisible="False"
+                                    IsVisible="{Binding IsSelected}" />
+                            <!-- <TextBlock Text="{Binding UiIndex}" Foreground="Purple"
+                            HorizontalAlignment="Left" VerticalAlignment="Top" /> -->
+                            <TextBlock Text="{Binding EngineIndex}" Foreground="Green"
                                        HorizontalAlignment="Left" VerticalAlignment="Bottom" />
                             <Image Width="64" Height="64"
                                    Source="{Binding Piece, Converter={StaticResource PieceToImageConverter}, Mode=OneWay}"

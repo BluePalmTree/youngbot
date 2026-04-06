@@ -30,22 +30,43 @@ namespace chess_engine.Models
             FullMoveNumber = 1;
         }
 
-        //public static Board FromStartPosition() { /* FEN parser later */ }
-
-        public static Board DefaultStartPosition()
+        public static Board FromStartPosition(string fen)
         {
-            var board = new Board();
-            var backRank = new[] {
-                Piece.Rook, Piece.Knight, Piece.Bishop, Piece.Queen,
-                Piece.King, Piece.Bishop, Piece.Knight, Piece.Rook
+            var pieceDict = new Dictionary<char, int>
+            {
+                { 'r', Piece.Black | Piece.Rook },
+                { 'n', Piece.Black | Piece.Knight },
+                { 'b', Piece.Black | Piece.Bishop },
+                { 'q', Piece.Black | Piece.Queen },
+                { 'k', Piece.Black | Piece.King },
+                { 'p', Piece.Black | Piece.Pawn },
+                { 'R', Piece.White | Piece.Rook },
+                { 'N', Piece.White | Piece.Knight },
+                { 'B', Piece.White | Piece.Bishop },
+                { 'Q', Piece.White | Piece.Queen },
+                { 'K', Piece.White | Piece.King },
+                { 'P', Piece.White | Piece.Pawn },
             };
 
-            for (int file = 0; file < 8; file++)
+            var board = new Board();
+            int curIndex = 0;
+            string fenBoard = fen.Split(' ')[0];
+
+            foreach (char symbol in fenBoard)
             {
-                board.Squares[IndexOf(file, 0)] = Piece.White | backRank[file];
-                board.Squares[IndexOf(file, 1)] = Piece.White | Piece.Pawn;
-                board.Squares[IndexOf(file, 6)] = Piece.Black | Piece.Pawn;
-                board.Squares[IndexOf(file, 7)] = Piece.Black | backRank[file];
+                if (symbol == '/')
+                {
+                    continue;
+                }
+                else if (char.IsNumber(symbol))
+                {
+                    curIndex += (int)char.GetNumericValue(symbol);
+                }
+                else if (char.IsLetter(symbol))
+                {
+                    board.Squares[FromUiIndex(curIndex)] = pieceDict[symbol];
+                    curIndex++;
+                }
             }
 
             return board;
@@ -55,5 +76,12 @@ namespace chess_engine.Models
         public static int IndexOf(int file, int rank) => rank * 8 + file;
         public static int FileOf(int index) => index % 8;
         public static int RankOf(int index) => index / 8;
+        public static int ToUiIndex(int rank, int file) => (7 - rank) * 8 + file;
+        public static int FromUiIndex(int uiIndex)
+        {
+            var rank = 7 - RankOf(uiIndex); // flip rank: UI row 0 = engine rank 7
+            var file = FileOf(uiIndex);
+            return IndexOf(file, rank);
+        }
     }
 }

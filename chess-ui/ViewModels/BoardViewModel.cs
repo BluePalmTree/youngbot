@@ -10,6 +10,7 @@ namespace chess_ui.ViewModels
     public partial class BoardViewModel : ViewModelBase
     {
         private const byte BoardSize = 8;
+        private const string StartPosition = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
         private Board _board;
 
         public string[] Ranks { get; } // rows        
@@ -27,13 +28,13 @@ namespace chess_ui.ViewModels
             {
                 for (int c = 0; c < BoardSize; c++)
                 {
-                    sq[i] = new SquareViewModel(i, Board.IndexOf(c, r), (r + c) % 2 == 0);
+                    sq[i] = new SquareViewModel(i, (r + c) % 2 == 0);
                     i++;
                 }
             }
             _squares = new ObservableCollection<SquareViewModel>(sq);
 
-            _board = Board.DefaultStartPosition();
+            _board = Board.FromStartPosition(StartPosition);
             SyncFromBoard();
         }
 
@@ -47,12 +48,19 @@ namespace chess_ui.ViewModels
 
         public void MovePiece(int fromIndex, int toIndex)
         {
+            foreach (var sq in Squares)
+                sq.IsHighlighted = false;
+
             var from = Squares[fromIndex];
             var to = Squares[toIndex];
 
             to.Piece = from.Piece;
             from.Piece = null;
             from.IsGhost = false;
+            from.IsSelected = false;
+
+            from.IsHighlighted = true;
+            to.IsHighlighted = true;
         }
 
 
@@ -65,11 +73,11 @@ namespace chess_ui.ViewModels
             {
                 for (int file = 0; file < BoardSize; file++)
                 {
-                    int boardIndex = Board.IndexOf(file, rank);
-                    int uiIndex = (7 - rank) * 8 + file;
-                    Debug.WriteLine($"Rank: {rank:00} File: {file:00} BoardIndex: {boardIndex:00} UiIndex: {uiIndex:00} Code: {PieceCodeMapper.ToCode(_board.Squares[boardIndex])} Piece: {_board.Squares[boardIndex]:b}");
-                    Squares[uiIndex].Piece = PieceCodeMapper.ToCode(_board.Squares[boardIndex]);
-                    Squares[uiIndex].BoardIndex = boardIndex;
+                    int engineIndex = Board.IndexOf(file, rank);
+                    int uiIndex = Board.ToUiIndex(rank, file);
+                    Debug.WriteLine($"Rank: {8 - rank}/{rank} File: {(char)('a' + file)}/{file} EngineIndex: {engineIndex:00} UiIndex: {uiIndex:00} Code: {PieceCodeMapper.ToCode(_board.Squares[engineIndex])} Piece: {_board.Squares[engineIndex]:b}");
+                    Squares[uiIndex].Piece = PieceCodeMapper.ToCode(_board.Squares[engineIndex]);
+                    Squares[uiIndex].EngineIndex = engineIndex;
                 }
             }
         }

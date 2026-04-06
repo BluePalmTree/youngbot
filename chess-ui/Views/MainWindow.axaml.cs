@@ -34,24 +34,16 @@ namespace chess_ui.Views
         private void OnPointerPressed(object? sender, PointerPressedEventArgs e)
         {
             if (sender is not Border border) return;
-
-            if (_selectedBorder is not null)
-            {
-                _selectedBorder.BorderBrush = null;
-                _selectedBorder.BorderThickness = new Thickness(0);
-                _selectedBorder = null;
-            }
-
-            border.BorderBrush = Brushes.Red;
-            border.BorderThickness = new Thickness(2);
-            _selectedBorder = border;
-
-
             if (border.DataContext is not SquareViewModel sq) return;
-            if (string.IsNullOrWhiteSpace(sq.Piece)) return;           // empty square — nothing to drag
+            if (string.IsNullOrWhiteSpace(sq.Piece)) return;
 
             _dragSource = sq;
-            sq.IsGhost = true;                     // hide piece at source
+            // Clear old selection highlight, set new one
+            var vm = (BoardViewModel)DataContext!;
+            foreach (var s in vm.Squares)
+                s.IsSelected = false;
+            sq.IsSelected = true;
+            sq.IsGhost = true; // hide piece at source
 
             // Build ghost image            
             var svgSrc = SvgSource.Load($"avares://chess-ui/Assets/pieces/{sq.Piece}.svg", baseUri: null);
@@ -120,7 +112,8 @@ namespace chess_ui.Views
             }
             else
             {
-                _dragSource.IsGhost = false;        // snap back — illegal or same square
+                _dragSource.IsGhost = false; // snap back — illegal or same square
+                _dragSource.IsSelected = false;
             }
 
             _dragSource = null;
