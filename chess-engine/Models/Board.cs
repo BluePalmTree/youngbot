@@ -86,6 +86,8 @@ namespace chess_engine.Models
 
             MoveGenerator.GenerateMoves(board);
 
+            board.FullMoveNumber++;
+
             return board;
         }
 

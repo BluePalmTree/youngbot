@@ -10,7 +10,7 @@ xmlns:converters="using:chess_ui.Converters"
 x:Name="mainWnd"
 Title="chess_ui"
 Width="800"
-Height="800"
+Height="880"
 x:DataType="vm:BoardViewModel"
 Background="WhiteSmoke"
 Icon="/Assets/avalonia-logo.ico"
@@ -31,7 +31,7 @@ mc:Ignorable="d">
         <vm:BoardViewModel />
     </Design.DataContext>
 
-    <Grid ColumnDefinitions="80,Auto,80" RowDefinitions="80,Auto,80">
+    <Grid ColumnDefinitions="80,Auto,80" RowDefinitions="80,Auto,80,80">
         <ItemsControl Grid.Row="0" Grid.Column="1" ItemsSource="{Binding Files}">
             <ItemsControl.ItemsPanel>
                 <ItemsPanelTemplate>
@@ -126,5 +126,12 @@ mc:Ignorable="d">
                 </DataTemplate>
             </ItemsControl.ItemTemplate>
         </ItemsControl>
+
+        <StackPanel Grid.Row="3" Grid.Column="0" Grid.ColumnSpan="3" Orientation="Horizontal">
+            <TextBlock Foreground="Black">
+                <Run Text="Total Moves:"></Run>
+                <Run Text="{Binding FullMoveNumber}"></Run>
+            </TextBlock>
+        </StackPanel>
     </Grid>
 </Window>

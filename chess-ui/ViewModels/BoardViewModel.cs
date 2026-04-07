@@ -12,8 +12,8 @@ namespace chess_ui.ViewModels
     public partial class BoardViewModel : ViewModelBase
     {
         private const byte BoardSize = 8;
-        //private const string StartPosition = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
-        private const string StartPosition = "rnbqkbnr/8/8/8/8/8/8/RNBQKBNR w KQkq - 0 1";
+        private const string StartPosition = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
+        //private const string StartPosition = "rnbqkbnr/8/8/8/8/8/8/RNBQKBNR w KQkq - 0 1";
         private Board _board;
 
         public string[] Ranks { get; } // rows        
@@ -44,7 +44,8 @@ namespace chess_ui.ViewModels
         [ObservableProperty]
         private ObservableCollection<SquareViewModel> _squares;
 
-
+        [ObservableProperty]
+        private int _fullMoveNumber;
 
 
 
@@ -55,7 +56,10 @@ namespace chess_ui.ViewModels
                 return false;
 
             foreach (var sq in Squares)
+            {
                 sq.IsHighlighted = false;
+                sq.IsValidMoveTarget = false;
+            }
 
             var from = Squares[fromIndex];
             var to = Squares[toIndex];
@@ -70,6 +74,7 @@ namespace chess_ui.ViewModels
 
             _board = Board.Update(_board, from.EngineIndex, to.EngineIndex);
             SyncFromBoard();
+            FullMoveNumber = _board.FullMoveNumber;
 
             return true;
         }

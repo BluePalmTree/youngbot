@@ -14,8 +14,13 @@ namespace chess_engine.Helpers
         public static readonly int[] DirectionOffsets = [8, -8, -1, 1, 7, -7, 9, -9];
         public static readonly int[][] NumSquaresToEdge = new int[64][];
 
-
         public static List<Move> Moves { get; private set; } = [];
+
+
+        private static readonly int NorthIndex = 0;
+        private static readonly int SouthIndex = 1;
+        private static readonly int NorthWestIndex = 4;
+        private static readonly int NorthEastIndex = 6;
 
         public static void PrecomputedMoveData()
         {
@@ -59,6 +64,25 @@ namespace chess_engine.Helpers
                     var slidingMoves = GenerateSlidingMoves(board, startSquare, piece);
                     moves.AddRange(slidingMoves);
                 }
+                else if (Piece.TypeOf(piece) == Piece.King)
+                {
+                    var kingMoves = GenerateKingMoves(board, startSquare);
+                    moves.AddRange(kingMoves);
+                }
+                else if (Piece.TypeOf(piece) == Piece.Knight)
+                {
+                    var knightMoves = GenerateKnightMoves(board, startSquare);
+                    moves.AddRange(knightMoves);
+                }
+                else if (Piece.TypeOf(piece) == Piece.Pawn)
+                {
+                    var pawnMoves = GeneratePawnMoves(board, startSquare);
+                    moves.AddRange(pawnMoves);
+                }
+                else
+                {
+                    throw new NotImplementedException("Piece type not implemented");
+                }
             }
 
             Debug.WriteLineIf(d, string.Join(Environment.NewLine, moves));
@@ -82,6 +106,137 @@ namespace chess_engine.Helpers
             }
 
             return false;
+        }
+
+        private static List<Move> GenerateKingMoves(Board board, int startSquare)
+        {
+            var moves = new List<Move>();
+            int n = 0;
+
+            for (int directionIndex = 0; directionIndex < 8; directionIndex++)
+            {
+                if (n < NumSquaresToEdge[startSquare][directionIndex])
+                {
+                    int targetSquare = startSquare + DirectionOffsets[directionIndex] * (n + 1);
+                    int pieceOnTargetSquare = board.Squares[targetSquare];
+
+                    // Blockes by friendly piece, so can't move any further in this direction
+                    if (Piece.IsColor(pieceOnTargetSquare, board.ColorToMove))
+                    {
+                        break;
+                    }
+
+                    moves.Add(new Move(startSquare, targetSquare));
+
+                    // Can't move any furhter in tis direction after capturing opponent's piece
+                    if (pieceOnTargetSquare != Piece.None && !Piece.IsColor(pieceOnTargetSquare, board.ColorToMove))
+                    {
+                        break;
+                    }
+                }
+            }
+
+            return moves;
+        }
+
+        private static List<Move> GenerateKnightMoves(Board board, int startSquare)
+        {
+            var moves = new List<Move>();
+            int mainDir = 1;
+            int secondaryDir = 0;
+
+            for (int directionIndex = 0; directionIndex < 4; directionIndex++)
+            {
+                if (mainDir < NumSquaresToEdge[startSquare][directionIndex])
+                {
+                    int tmpSquare = startSquare + DirectionOffsets[directionIndex] * (mainDir + 1);
+                    int si = directionIndex == NorthIndex || directionIndex == SouthIndex ? 2 : 0;
+                    int ei = si + 2;
+
+                    for (int s = si; s < ei; s++)
+                    {
+                        int secondarySqToEdge = NumSquaresToEdge[tmpSquare][s];
+                        if (secondaryDir < secondarySqToEdge)
+                        {
+                            int targetSquare = tmpSquare + DirectionOffsets[s] * (secondaryDir + 1);
+                            int pieceOnTargetSquare = board.Squares[targetSquare];
+
+                            // Blockes by friendly piece, so can't move any further in this direction
+                            if (Piece.IsColor(pieceOnTargetSquare, board.ColorToMove))
+                            {
+                                break;
+                            }
+
+                            moves.Add(new Move(startSquare, targetSquare));
+
+                            // Can't move any furhter in tis direction after capturing opponent's piece
+                            if (pieceOnTargetSquare != Piece.None && !Piece.IsColor(pieceOnTargetSquare, board.ColorToMove))
+                            {
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+
+            return moves;
+        }
+
+        private static List<Move> GeneratePawnMoves(Board board, int startSquare)
+        {
+            var moves = new List<Move>();
+
+            var whiteIndex = Piece.IsColor(board.Squares[startSquare], Piece.White) ? 0 : 1;
+
+            var north = NumSquaresToEdge[startSquare][NorthIndex + whiteIndex];
+            var rank = Board.RankOf(startSquare);
+            bool moved = whiteIndex == 0 ? rank != 1 : rank != 6;
+
+            if (north > 0)
+            {
+                // Pawn hasn't moved yet so can move two squares, if empty
+                if (!moved && north > 1)
+                {
+                    for (int n = 1; n < 3; n++)
+                    {
+                        int targetSquare = startSquare + DirectionOffsets[NorthIndex + whiteIndex] * n;
+                        int pieceOnTargetSquare = board.Squares[targetSquare];
+
+                        if (pieceOnTargetSquare == Piece.None)
+                            moves.Add(new Move(startSquare, targetSquare));
+                    }
+                }
+                else
+                {
+                    int targetSquare = startSquare + DirectionOffsets[NorthIndex + whiteIndex];
+                    int pieceOnTargetSquare = board.Squares[targetSquare];
+
+                    if (pieceOnTargetSquare == Piece.None)
+                        moves.Add(new Move(startSquare, targetSquare));
+                }
+            }
+
+            var northWest = NumSquaresToEdge[startSquare][NorthWestIndex + whiteIndex];
+            if (northWest > 0)
+            {
+                int targetSquare = startSquare + DirectionOffsets[NorthWestIndex + whiteIndex];
+                int pieceOnTargetSquare = board.Squares[targetSquare];
+
+                if (pieceOnTargetSquare != Piece.None && !Piece.IsColor(pieceOnTargetSquare, board.ColorToMove))
+                    moves.Add(new Move(startSquare, targetSquare));
+            }
+
+            var northEast = NumSquaresToEdge[startSquare][NorthEastIndex + whiteIndex];
+            if (northEast > 0)
+            {
+                int targetSquare = startSquare + DirectionOffsets[NorthEastIndex + whiteIndex];
+                int pieceOnTargetSquare = board.Squares[targetSquare];
+
+                if (pieceOnTargetSquare != Piece.None && !Piece.IsColor(pieceOnTargetSquare, board.ColorToMove))
+                    moves.Add(new Move(startSquare, targetSquare));
+            }
+
+            return moves;
         }
 
         private static List<Move> GenerateSlidingMoves(Board board, int startSquare, int piece)
