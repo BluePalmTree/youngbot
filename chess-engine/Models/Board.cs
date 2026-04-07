@@ -79,8 +79,21 @@ namespace chess_engine.Models
 
         public static Board Update(Board board, int from, int to)
         {
+            board.EnPassantSquare = -1;
+            var move = MoveGenerator.GetMove(from, to);
+            if (move.HasValue && move.Value.Flag == MoveFlag.DoublePawnPush)
+            {
+                board.EnPassantSquare = board.ColorToMove == Piece.White ? to - 8 : to + 8;
+            }
+
             board.Squares[to] = board.Squares[from];
             board.Squares[from] = Piece.None;
+
+            if (move.HasValue && move.Value.Flag == MoveFlag.EnPassant)
+            {
+                var rmvPawn = board.ColorToMove == Piece.White ? to - 8 : to + 8;
+                board.Squares[rmvPawn] = Piece.None;
+            }
 
             board.ColorToMove = board.ColorToMove == Piece.White ? Piece.Black : Piece.White;
 

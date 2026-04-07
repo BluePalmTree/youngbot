@@ -94,6 +94,15 @@ namespace chess_engine.Helpers
             return [.. Moves.Where(m => m.From == square).Select(m => m.To)];
         }
 
+        public static Move? GetMove(int from, int to)
+        {
+            foreach (var move in Moves)
+                if (move.From == from && move.To == to)
+                    return move;
+
+            return null;
+        }
+
         public static bool IsValidMove(int from, int to)
         {
             foreach (var move in Moves)
@@ -123,7 +132,7 @@ namespace chess_engine.Helpers
                     // Blockes by friendly piece, so can't move any further in this direction
                     if (Piece.IsColor(pieceOnTargetSquare, board.ColorToMove))
                     {
-                        break;
+                        continue;
                     }
 
                     moves.Add(new Move(startSquare, targetSquare));
@@ -131,7 +140,7 @@ namespace chess_engine.Helpers
                     // Can't move any furhter in tis direction after capturing opponent's piece
                     if (pieceOnTargetSquare != Piece.None && !Piece.IsColor(pieceOnTargetSquare, board.ColorToMove))
                     {
-                        break;
+                        continue;
                     }
                 }
             }
@@ -164,7 +173,7 @@ namespace chess_engine.Helpers
                             // Blockes by friendly piece, so can't move any further in this direction
                             if (Piece.IsColor(pieceOnTargetSquare, board.ColorToMove))
                             {
-                                break;
+                                continue;
                             }
 
                             moves.Add(new Move(startSquare, targetSquare));
@@ -172,7 +181,7 @@ namespace chess_engine.Helpers
                             // Can't move any furhter in tis direction after capturing opponent's piece
                             if (pieceOnTargetSquare != Piece.None && !Piece.IsColor(pieceOnTargetSquare, board.ColorToMove))
                             {
-                                break;
+                                continue;
                             }
                         }
                     }
@@ -203,7 +212,14 @@ namespace chess_engine.Helpers
                         int pieceOnTargetSquare = board.Squares[targetSquare];
 
                         if (pieceOnTargetSquare == Piece.None)
-                            moves.Add(new Move(startSquare, targetSquare));
+                        {
+                            var mf = n == 2 ? MoveFlag.DoublePawnPush : MoveFlag.Normal;
+                            moves.Add(new Move(startSquare, targetSquare, mf));
+                        }
+                        else
+                        {
+                            break;
+                        }
                     }
                 }
                 else
@@ -222,6 +238,9 @@ namespace chess_engine.Helpers
                 int targetSquare = startSquare + DirectionOffsets[NorthWestIndex + whiteIndex];
                 int pieceOnTargetSquare = board.Squares[targetSquare];
 
+                if (targetSquare == board.EnPassantSquare)
+                    moves.Add(new Move(startSquare, targetSquare, MoveFlag.EnPassant));
+
                 if (pieceOnTargetSquare != Piece.None && !Piece.IsColor(pieceOnTargetSquare, board.ColorToMove))
                     moves.Add(new Move(startSquare, targetSquare));
             }
@@ -231,6 +250,9 @@ namespace chess_engine.Helpers
             {
                 int targetSquare = startSquare + DirectionOffsets[NorthEastIndex + whiteIndex];
                 int pieceOnTargetSquare = board.Squares[targetSquare];
+
+                if (targetSquare == board.EnPassantSquare)
+                    moves.Add(new Move(startSquare, targetSquare, MoveFlag.EnPassant));
 
                 if (pieceOnTargetSquare != Piece.None && !Piece.IsColor(pieceOnTargetSquare, board.ColorToMove))
                     moves.Add(new Move(startSquare, targetSquare));
