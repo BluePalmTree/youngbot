@@ -1,3 +1,4 @@
+using System;
 using System.Diagnostics;
 using Avalonia;
 using Avalonia.Controls;
@@ -7,6 +8,7 @@ using Avalonia.Input;
 using Avalonia.Layout;
 using Avalonia.Media.Imaging;
 using Avalonia.Svg.Skia;
+using chess_engine.Models;
 using chess_ui.ViewModels;
 
 namespace chess_ui.Views
@@ -16,6 +18,49 @@ namespace chess_ui.Views
         public MainWindow()
         {
             InitializeComponent();
+        }
+
+        public void BoardItems_DataContextChanged(object? sender, EventArgs e)
+        {
+            base.OnDataContextChanged(e);
+
+            if (DataContext is BoardViewModel vm)
+            {
+                vm.PromotionRequired += ShowPromotionFlyout;
+            }
+        }
+
+        private void ShowPromotionFlyout(int targetUiIndex)
+        {
+            if (BoardItems.ContainerFromIndex(targetUiIndex) is not Control container) return;
+
+            var vm = (BoardViewModel?)DataContext;
+            if (vm is null) return;
+
+            var flyout = new MenuFlyout
+            {
+                Placement = PlacementMode.BottomEdgeAlignedLeft
+            };
+            var items = new[]
+            {
+                ("Queen", MoveFlag.PromoteQueen),
+                ("Rook", MoveFlag.PromoteRook),
+                ("Bishop", MoveFlag.PromoteBishop),
+                ("Knight", MoveFlag.PromoteKnight),
+            };
+
+            foreach (var (label, flag) in items)
+            {
+                var item = new MenuItem { Header = label };
+                item.Click += (_, _) =>
+                {
+                    flyout.Hide();
+                    vm.CompletePromotion(flag);
+                };
+                flyout.Items.Add(item);
+            }
+
+            flyout.ShowAt(container);
         }
 
         #region Drag & Drop Piece
@@ -161,7 +206,6 @@ namespace chess_ui.Views
         /// </summary>
         private SquareViewModel? HitTestSquare(Point windowPoint)
         {
-            Debug.WriteLine($"Window-Point: {windowPoint}");
             // The board ItemsControl is in Grid col 1, row 1.
             // Each generated container is a ContentPresenter wrapping a Border.
             // We translate the window point into the ItemsControl's coordinate space

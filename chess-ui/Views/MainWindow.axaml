@@ -63,7 +63,8 @@ mc:Ignorable="d">
         </ItemsControl>
 
         <!-- Board -->
-        <ItemsControl x:Name="BoardItems" Grid.Column="1" Grid.Row="1" ItemsSource="{Binding Squares}">
+        <ItemsControl x:Name="BoardItems" Grid.Column="1" Grid.Row="1" ItemsSource="{Binding Squares}"
+                      DataContextChanged="BoardItems_DataContextChanged">
             <ItemsControl.ItemsPanel>
                 <ItemsPanelTemplate>
                     <UniformGrid Columns="8" Rows="8"></UniformGrid>

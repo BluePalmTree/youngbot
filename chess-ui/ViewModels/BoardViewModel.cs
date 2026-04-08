@@ -1,11 +1,13 @@
+using System;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Linq;
-using Avalonia.Controls;
 using chess_engine.Helpers;
 using chess_engine.Models;
 using chess_ui.Helpers;
+using chess_ui.Models;
 using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
 
 namespace chess_ui.ViewModels
 {
@@ -13,11 +15,16 @@ namespace chess_ui.ViewModels
     {
         private const byte BoardSize = 8;
         private const string StartPosition = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
-        //private const string StartPosition = "rnbqkbnr/8/8/8/8/8/8/RNBQKBNR w KQkq - 0 1";
         private Board _board;
+        private int _pendingPromotionFrom;
+        private int _pendingPromotionTo;
 
         public string[] Ranks { get; } // rows        
         public string[] Files { get; } // columns
+
+        // Raised when promotion is needed; int = UI index of the target square
+        public event Action<int>? PromotionRequired;
+        public event Action? PromotionCompleted;
 
         public BoardViewModel()
         {
@@ -25,13 +32,13 @@ namespace chess_ui.ViewModels
             Files = ["a", "b", "c", "d", "e", "f", "g", "h"];
 
             // Init squares
-            var sq = new SquareViewModel[64];
+            var sq = new SquareViewModel[BoardSize * BoardSize];
             byte i = 0;
             for (int r = 0; r < BoardSize; r++)
             {
-                for (int c = 0; c < BoardSize; c++)
+                for (int f = 0; f < BoardSize; f++)
                 {
-                    sq[i] = new SquareViewModel(i, (r + c) % 2 == 0);
+                    sq[i] = new SquareViewModel(i, (r + f) % 2 == 0);
                     i++;
                 }
             }
@@ -47,35 +54,26 @@ namespace chess_ui.ViewModels
         [ObservableProperty]
         private int _fullMoveNumber;
 
-
-
-
         public bool TryMovePiece(int fromIndex, int toIndex)
         {
             if (!MoveGenerator.IsValidMove(Board.FromUiIndex(fromIndex), Board.FromUiIndex(toIndex)))
                 return false;
 
-            foreach (var sq in Squares)
+            // Check for promotion
+            int engineTo = Board.FromUiIndex(toIndex);
+            int piece = _board.Squares[Board.FromUiIndex(fromIndex)];
+            bool isPromotion = Piece.TypeOf(piece) == Piece.Pawn
+                && (Board.RankOf(engineTo) == 7 || Board.RankOf(engineTo) == 0);
+
+            if (isPromotion)
             {
-                sq.IsHighlighted = false;
-                sq.IsValidMoveTarget = false;
+                _pendingPromotionFrom = fromIndex;
+                _pendingPromotionTo = toIndex;
+                PromotionRequired?.Invoke(toIndex); // tell the view which square to anchor to
+                return true;
             }
 
-            var from = Squares[fromIndex];
-            var to = Squares[toIndex];
-
-            // to.Piece = from.Piece;
-            // from.Piece = null;
-            from.IsGhost = false;
-            from.IsSelected = false;
-
-            from.IsHighlighted = true;
-            to.IsHighlighted = true;
-
-            _board = Board.Update(_board, from.EngineIndex, to.EngineIndex);
-            SyncFromBoard();
-            FullMoveNumber = _board.FullMoveNumber;
-
+            CompleteMove(fromIndex, toIndex, MoveFlag.Normal);
             return true;
         }
 
@@ -96,6 +94,32 @@ namespace chess_ui.ViewModels
             }
         }
 
+        public void CompletePromotion(MoveFlag flag)
+        {
+            CompleteMove(_pendingPromotionFrom, _pendingPromotionTo, flag);
+            PromotionCompleted?.Invoke();
+        }
+
+        private void CompleteMove(int fromIndex, int toIndex, MoveFlag flag)
+        {
+            foreach (var sq in Squares)
+            {
+                sq.IsHighlighted = false;
+                sq.IsValidMoveTarget = false;
+            }
+
+            var from = Squares[fromIndex];
+            var to = Squares[toIndex];
+
+            from.IsGhost = false;
+            from.IsSelected = false;
+            from.IsHighlighted = true;
+            to.IsHighlighted = true;
+
+            _board = Board.Update(_board, from.EngineIndex, to.EngineIndex, flag);
+            SyncFromBoard();
+            FullMoveNumber = _board.FullMoveNumber;
+        }
 
 
         private void SyncFromBoard()

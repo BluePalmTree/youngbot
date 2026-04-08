@@ -77,7 +77,7 @@ namespace chess_engine.Models
             return board;
         }
 
-        public static Board Update(Board board, int from, int to)
+        public static Board Update(Board board, int from, int to, MoveFlag flag = MoveFlag.Normal)
         {
             board.EnPassantSquare = -1;
             var move = MoveGenerator.GetMove(from, to);
@@ -95,6 +95,11 @@ namespace chess_engine.Models
                 board.Squares[rmvPawn] = Piece.None;
             }
 
+            if (flag == MoveFlag.PromoteQueen) board.Squares[to] = Piece.ColorOf(board.Squares[to]) | Piece.Queen;
+            if (flag == MoveFlag.PromoteRook) board.Squares[to] = Piece.ColorOf(board.Squares[to]) | Piece.Rook;
+            if (flag == MoveFlag.PromoteBishop) board.Squares[to] = Piece.ColorOf(board.Squares[to]) | Piece.Bishop;
+            if (flag == MoveFlag.PromoteKnight) board.Squares[to] = Piece.ColorOf(board.Squares[to]) | Piece.Knight;
+
             board.ColorToMove = board.ColorToMove == Piece.White ? Piece.Black : Piece.White;
 
             MoveGenerator.GenerateMoves(board);
@@ -109,10 +114,10 @@ namespace chess_engine.Models
         public static int FileOf(int index) => index % 8;
         public static int RankOf(int index) => index / 8;
         public static int ToUiIndex(int rank, int file) => (7 - rank) * 8 + file;
-        public static int ToUiIndex(int uiIndex)
+        public static int ToUiIndex(int engineIndex)
         {
-            var rank = RankOf(uiIndex);
-            var file = FileOf(uiIndex);
+            var rank = RankOf(engineIndex);
+            var file = FileOf(engineIndex);
 
             return ToUiIndex(rank, file);
         }
