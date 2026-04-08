@@ -7,10 +7,14 @@ namespace chess_engine.Models
         // Mailbox: index = rank*8 + file, 0=a1, 63=h8
         public readonly int[] Squares;
 
-        // Castling rights packed as 4 bits: KQkq
+        /// <summary>
+        /// Castling rights packed as 4 bits: KQkq
+        /// </summary>
         public int CastlingRights;
 
-        // En passant target square (-1 = none)
+        /// <summary>
+        /// En passant target square (-1 = none)
+        /// </summary>
         public int EnPassantSquare;
 
         // Side to move
@@ -35,6 +39,7 @@ namespace chess_engine.Models
         public static Board FromStartPosition(string fen)
         {
             // https://de.wikipedia.org/wiki/Forsyth-Edwards-Notation
+
             var pieceDict = new Dictionary<char, int>
             {
                 { 'r', Piece.Black | Piece.Rook },
@@ -81,6 +86,40 @@ namespace chess_engine.Models
         public static Board Update(Board board, int from, int to, MoveFlag flag = MoveFlag.Normal)
         {
             board.EnPassantSquare = -1;
+
+            var fromPieceType = Piece.TypeOf(board.Squares[from]);
+            if (board.CastlingRights > 0 && (fromPieceType == Piece.King || fromPieceType == Piece.Rook))
+            {
+                if (board.ColorToMove == Piece.White)
+                {
+                    if (fromPieceType == Piece.King)
+                    {
+                        board.CastlingRights &= 0b0011;
+                    }
+                    else
+                    {
+                        if (Board.FileOf(from) == 0)
+                            board.CastlingRights &= 0b1011;
+                        else if (Board.FileOf(from) == 7)
+                            board.CastlingRights &= 0b0111;
+                    }
+                }
+                else
+                {
+                    if (fromPieceType == Piece.King)
+                    {
+                        board.CastlingRights &= 0b1100;
+                    }
+                    else
+                    {
+                        if (Board.FileOf(from) == 0)
+                            board.CastlingRights &= 0b1110;
+                        else if (Board.FileOf(from) == 7)
+                            board.CastlingRights &= 0b1101;
+                    }
+                }
+            }
+
             var move = MoveGenerator.GetMove(from, to);
             if (move.HasValue && move.Value.Flag == MoveFlag.DoublePawnPush)
             {
@@ -96,10 +135,23 @@ namespace chess_engine.Models
                 board.Squares[rmvPawn] = Piece.None;
             }
 
+            // Pawn Promotions
             if (flag == MoveFlag.PromoteQueen) board.Squares[to] = Piece.ColorOf(board.Squares[to]) | Piece.Queen;
             if (flag == MoveFlag.PromoteRook) board.Squares[to] = Piece.ColorOf(board.Squares[to]) | Piece.Rook;
             if (flag == MoveFlag.PromoteBishop) board.Squares[to] = Piece.ColorOf(board.Squares[to]) | Piece.Bishop;
             if (flag == MoveFlag.PromoteKnight) board.Squares[to] = Piece.ColorOf(board.Squares[to]) | Piece.Knight;
+
+            // Castling
+            if (move.HasValue && move.Value.Flag == MoveFlag.KingSideCastle)
+            {
+                board.Squares[from + 1] = board.Squares[to + 1];
+                board.Squares[to + 1] = Piece.None;
+            }
+            else if (move.HasValue && move.Value.Flag == MoveFlag.QueenSideCastle)
+            {
+                board.Squares[from - 1] = board.Squares[to - 2];
+                board.Squares[to - 2] = Piece.None;
+            }
 
             board.ColorToMove = board.ColorToMove == Piece.White ? Piece.Black : Piece.White;
 

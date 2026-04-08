@@ -19,6 +19,8 @@ namespace chess_engine.Helpers
 
         private static readonly int NorthIndex = 0;
         private static readonly int SouthIndex = 1;
+        private static readonly int WestIndex = 2;
+        private static readonly int EastIndex = 3;
         private static readonly int NorthWestIndex = 4;
         private static readonly int NorthEastIndex = 6;
 
@@ -131,16 +133,53 @@ namespace chess_engine.Helpers
 
                     // Blockes by friendly piece, so can't move any further in this direction
                     if (Piece.IsColor(pieceOnTargetSquare, board.ColorToMove))
-                    {
                         continue;
-                    }
 
                     moves.Add(new Move(startSquare, targetSquare));
 
                     // Can't move any furhter in tis direction after capturing opponent's piece
                     if (pieceOnTargetSquare != Piece.None && !Piece.IsColor(pieceOnTargetSquare, board.ColorToMove))
-                    {
                         continue;
+
+                    // Castling rules
+                    if (board.CastlingRights == 0)
+                        continue;
+
+                    var kingSideMask = board.ColorToMove == Piece.White ? 0b1000 : 0b0010;
+                    var queenSideMask = board.ColorToMove == Piece.White ? 0b0100 : 0b0001;
+
+                    if (directionIndex == EastIndex && (board.CastlingRights & kingSideMask) != 0)
+                    {
+                        targetSquare = startSquare + DirectionOffsets[directionIndex] * (n + 2);
+                        pieceOnTargetSquare = board.Squares[targetSquare];
+
+                        if (pieceOnTargetSquare != Piece.None)
+                            continue;
+
+                        moves.Add(new Move(startSquare, targetSquare, MoveFlag.KingSideCastle));
+                    }
+
+                    if (directionIndex == WestIndex && (board.CastlingRights & queenSideMask) != 0)
+                    {
+                        bool canCastleQueenSide = true;
+
+                        for (int m = 2; m < 4; m++)
+                        {
+                            targetSquare = startSquare + DirectionOffsets[directionIndex] * (n + m);
+                            pieceOnTargetSquare = board.Squares[targetSquare];
+
+                            if (pieceOnTargetSquare != Piece.None)
+                            {
+                                canCastleQueenSide = false;
+                                break;
+                            }
+                        }
+
+                        if (!canCastleQueenSide)
+                            continue;
+
+                        targetSquare = startSquare + DirectionOffsets[directionIndex] * (n + 2);
+                        moves.Add(new Move(startSquare, targetSquare, MoveFlag.QueenSideCastle));
                     }
                 }
             }
