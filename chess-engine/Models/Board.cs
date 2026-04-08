@@ -34,6 +34,7 @@ namespace chess_engine.Models
 
         public static Board FromStartPosition(string fen)
         {
+            // https://de.wikipedia.org/wiki/Forsyth-Edwards-Notation
             var pieceDict = new Dictionary<char, int>
             {
                 { 'r', Piece.Black | Piece.Rook },
@@ -66,7 +67,7 @@ namespace chess_engine.Models
                 }
                 else if (char.IsLetter(symbol))
                 {
-                    board.Squares[FromUiIndex(curIndex)] = pieceDict[symbol];
+                    board.Squares[ToEngineIndex(curIndex)] = pieceDict[symbol];
                     curIndex++;
                 }
             }
@@ -121,7 +122,7 @@ namespace chess_engine.Models
 
             return ToUiIndex(rank, file);
         }
-        public static int FromUiIndex(int uiIndex)
+        public static int ToEngineIndex(int uiIndex)
         {
             var rank = 7 - RankOf(uiIndex); // flip rank: UI row 0 = engine rank 7
             var file = FileOf(uiIndex);

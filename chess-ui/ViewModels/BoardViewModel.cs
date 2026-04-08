@@ -56,12 +56,12 @@ namespace chess_ui.ViewModels
 
         public bool TryMovePiece(int fromIndex, int toIndex)
         {
-            if (!MoveGenerator.IsValidMove(Board.FromUiIndex(fromIndex), Board.FromUiIndex(toIndex)))
+            if (!MoveGenerator.IsValidMove(Board.ToEngineIndex(fromIndex), Board.ToEngineIndex(toIndex)))
                 return false;
 
             // Check for promotion
-            int engineTo = Board.FromUiIndex(toIndex);
-            int piece = _board.Squares[Board.FromUiIndex(fromIndex)];
+            int engineTo = Board.ToEngineIndex(toIndex);
+            int piece = _board.Squares[Board.ToEngineIndex(fromIndex)];
             bool isPromotion = Piece.TypeOf(piece) == Piece.Pawn
                 && (Board.RankOf(engineTo) == 7 || Board.RankOf(engineTo) == 0);
 

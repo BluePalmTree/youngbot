@@ -25,9 +25,7 @@ namespace chess_ui.Views
             base.OnDataContextChanged(e);
 
             if (DataContext is BoardViewModel vm)
-            {
                 vm.PromotionRequired += ShowPromotionFlyout;
-            }
         }
 
         private void ShowPromotionFlyout(int targetUiIndex)
@@ -64,7 +62,6 @@ namespace chess_ui.Views
         }
 
         #region Drag & Drop Piece
-
         private const double DragThreshold = 4.0;
 
         // ── drag state ────────────────────────────────────────────────
