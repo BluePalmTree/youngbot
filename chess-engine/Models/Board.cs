@@ -2,7 +2,7 @@ using chess_engine.Helpers;
 
 namespace chess_engine.Models
 {
-    public struct Board
+    public class Board
     {
         // Mailbox: index = rank*8 + file, 0=a1, 63=h8
         public readonly int[] Squares;
@@ -83,83 +83,68 @@ namespace chess_engine.Models
             return board;
         }
 
-        public static Board Update(Board board, int from, int to, MoveFlag flag = MoveFlag.Normal)
+        public void MakeMove(Move move)
         {
-            board.EnPassantSquare = -1;
+            EnPassantSquare = -1;
 
-            var fromPieceType = Piece.TypeOf(board.Squares[from]);
-            if (board.CastlingRights > 0 && (fromPieceType == Piece.King || fromPieceType == Piece.Rook))
+            int movePiece = Piece.TypeOf(Squares[move.From]);
+            var whiteMoved = ColorToMove == Piece.White;
+
+            // Update castling rights
+            if (CastlingRights > 0 && (movePiece == Piece.King || movePiece == Piece.Rook))
             {
-                if (board.ColorToMove == Piece.White)
+                var kingRights = whiteMoved ? 0b0011 : 0b1100;
+                var kingSideRights = whiteMoved ? 0b0111 : 0b1101;
+                var queenSideRights = whiteMoved ? 0b1011 : 0b1110;
+
+                if (movePiece == Piece.King)
                 {
-                    if (fromPieceType == Piece.King)
-                    {
-                        board.CastlingRights &= 0b0011;
-                    }
-                    else
-                    {
-                        if (Board.FileOf(from) == 0)
-                            board.CastlingRights &= 0b1011;
-                        else if (Board.FileOf(from) == 7)
-                            board.CastlingRights &= 0b0111;
-                    }
+                    CastlingRights &= kingRights;
                 }
                 else
                 {
-                    if (fromPieceType == Piece.King)
-                    {
-                        board.CastlingRights &= 0b1100;
-                    }
-                    else
-                    {
-                        if (Board.FileOf(from) == 0)
-                            board.CastlingRights &= 0b1110;
-                        else if (Board.FileOf(from) == 7)
-                            board.CastlingRights &= 0b1101;
-                    }
+                    var fileOf = FileOf(move.From);
+                    if (fileOf == 0)
+                        CastlingRights &= queenSideRights;
+                    else if (fileOf == 7)
+                        CastlingRights &= kingSideRights;
                 }
             }
 
-            var move = MoveGenerator.GetMove(from, to);
-            if (move.HasValue && move.Value.Flag == MoveFlag.DoublePawnPush)
-            {
-                board.EnPassantSquare = board.ColorToMove == Piece.White ? to - 8 : to + 8;
-            }
+            if (move.Flag == MoveFlag.DoublePawnPush)
+                EnPassantSquare = whiteMoved ? move.To - 8 : move.To + 8;
 
-            board.Squares[to] = board.Squares[from];
-            board.Squares[from] = Piece.None;
+            Squares[move.To] = Squares[move.From];
+            Squares[move.From] = Piece.None;
 
-            if (move.HasValue && move.Value.Flag == MoveFlag.EnPassant)
+            if (move.Flag == MoveFlag.EnPassant)
             {
-                var rmvPawn = board.ColorToMove == Piece.White ? to - 8 : to + 8;
-                board.Squares[rmvPawn] = Piece.None;
+                var takenPawn = whiteMoved ? move.To - 8 : move.To + 8;
+                Squares[takenPawn] = Piece.None;
             }
 
             // Pawn Promotions
-            if (flag == MoveFlag.PromoteQueen) board.Squares[to] = Piece.ColorOf(board.Squares[to]) | Piece.Queen;
-            if (flag == MoveFlag.PromoteRook) board.Squares[to] = Piece.ColorOf(board.Squares[to]) | Piece.Rook;
-            if (flag == MoveFlag.PromoteBishop) board.Squares[to] = Piece.ColorOf(board.Squares[to]) | Piece.Bishop;
-            if (flag == MoveFlag.PromoteKnight) board.Squares[to] = Piece.ColorOf(board.Squares[to]) | Piece.Knight;
+            if (move.Flag == MoveFlag.PromoteQueen) Squares[move.To] = Piece.ColorOf(Squares[move.To]) | Piece.Queen;
+            if (move.Flag == MoveFlag.PromoteRook) Squares[move.To] = Piece.ColorOf(Squares[move.To]) | Piece.Rook;
+            if (move.Flag == MoveFlag.PromoteBishop) Squares[move.To] = Piece.ColorOf(Squares[move.To]) | Piece.Bishop;
+            if (move.Flag == MoveFlag.PromoteKnight) Squares[move.To] = Piece.ColorOf(Squares[move.To]) | Piece.Knight;
 
             // Castling
-            if (move.HasValue && move.Value.Flag == MoveFlag.KingSideCastle)
+            if (move.Flag == MoveFlag.KingSideCastle)
             {
-                board.Squares[from + 1] = board.Squares[to + 1];
-                board.Squares[to + 1] = Piece.None;
+                Squares[move.From + 1] = Squares[move.To + 1];
+                Squares[move.To + 1] = Piece.None;
             }
-            else if (move.HasValue && move.Value.Flag == MoveFlag.QueenSideCastle)
+            else if (move.Flag == MoveFlag.QueenSideCastle)
             {
-                board.Squares[from - 1] = board.Squares[to - 2];
-                board.Squares[to - 2] = Piece.None;
+                Squares[move.From - 1] = Squares[move.To - 2];
+                Squares[move.To - 2] = Piece.None;
             }
 
-            board.ColorToMove = board.ColorToMove == Piece.White ? Piece.Black : Piece.White;
+            ColorToMove = ColorToMove == Piece.White ? Piece.Black : Piece.White;
+            FullMoveNumber++;
 
-            MoveGenerator.GenerateMoves(board);
-
-            board.FullMoveNumber++;
-
-            return board;
+            MoveGenerator.GenerateMoves(this);
         }
 
         // Square index helpers

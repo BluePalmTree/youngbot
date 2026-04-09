@@ -1,3 +1,4 @@
+using System;
 using chess_engine.Models;
 
 namespace chess_ui.Helpers
@@ -17,7 +18,7 @@ namespace chess_ui.Helpers
                 Piece.Rook => "ro",
                 Piece.Queen => "qu",
                 Piece.King => "ki",
-                _ => string.Empty
+                _ => throw new NotImplementedException()
             };
 
             return color + type;

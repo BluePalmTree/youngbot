@@ -1,12 +1,10 @@
-using System.ComponentModel.DataAnnotations;
-using System.Diagnostics;
 using chess_engine.Models;
 
 namespace chess_engine.Helpers
 {
     public static class MoveGenerator
     {
-        private static readonly bool d = true; // debugging
+        //private static readonly bool d = true; // debugging
 
         /// <summary>
         /// N, S, W, E, NW, SW, NE, SE
@@ -58,6 +56,7 @@ namespace chess_engine.Helpers
             for (int startSquare = 0; startSquare < 64; startSquare++)
             {
                 int piece = board.Squares[startSquare];
+
                 if (!Piece.IsColor(piece, board.ColorToMove))
                     continue;
 
@@ -93,7 +92,15 @@ namespace chess_engine.Helpers
 
         public static int[] GetValidMovesForSquare(int square)
         {
-            return [.. Moves.Where(m => m.From == square).Select(m => m.To)];
+            var result = new List<int>();
+            for (int i = 0; i < Moves.Count; i++)
+            {
+                if (Moves[i].From == square)
+                    result.Add(Moves[i].To);
+            }
+#pragma warning disable IDE0305 // Simplify collection initialization
+            return result.ToArray();
+#pragma warning restore IDE0305 // Simplify collection initialization
         }
 
         public static Move? GetMove(int from, int to)

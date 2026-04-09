@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Linq;
@@ -13,9 +14,8 @@ namespace chess_ui.ViewModels
     {
         private const byte BoardSize = 8;
         private const string StartPosition = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
-        private Board _board;
-        private int _pendingPromotionFrom;
-        private int _pendingPromotionTo;
+        private readonly Board _board;
+        private Move? _pendingPromotionMove;
 
         public string[] Ranks { get; } // rows        
         public string[] Files { get; } // columns
@@ -31,7 +31,7 @@ namespace chess_ui.ViewModels
 
             // Init squares
             var sq = new SquareViewModel[BoardSize * BoardSize];
-            byte i = 0;
+            var i = 0;
             for (int r = 0; r < BoardSize; r++)
             {
                 for (int f = 0; f < BoardSize; f++)
@@ -52,28 +52,11 @@ namespace chess_ui.ViewModels
         [ObservableProperty]
         private int _fullMoveNumber;
 
-        public bool TryMovePiece(int fromIndex, int toIndex)
-        {
-            if (!MoveGenerator.IsValidMove(Board.ToEngineIndex(fromIndex), Board.ToEngineIndex(toIndex)))
-                return false;
 
-            // Check for promotion
-            int engineTo = Board.ToEngineIndex(toIndex);
-            int piece = _board.Squares[Board.ToEngineIndex(fromIndex)];
-            bool isPromotion = Piece.TypeOf(piece) == Piece.Pawn
-                && (Board.RankOf(engineTo) == 7 || Board.RankOf(engineTo) == 0);
 
-            if (isPromotion)
-            {
-                _pendingPromotionFrom = fromIndex;
-                _pendingPromotionTo = toIndex;
-                PromotionRequired?.Invoke(toIndex); // tell the view which square to anchor to
-                return true;
-            }
 
-            CompleteMove(fromIndex, toIndex, MoveFlag.Normal);
-            return true;
-        }
+
+
 
         public void SelectSquare(int index)
         {
@@ -82,7 +65,7 @@ namespace chess_ui.ViewModels
 
 
             int[] movesForSquare = MoveGenerator.GetValidMovesForSquare(square.EngineIndex);
-            Debug.WriteLine($"Moves for selected square: {string.Join(", ", movesForSquare)}");
+            //Debug.WriteLine($"Moves for selected square: {string.Join(", ", movesForSquare)}");
             for (int i = 0; i < 64; i++)
             {
                 Squares[Board.ToUiIndex(i)].IsValidMoveTarget = false;
@@ -92,13 +75,45 @@ namespace chess_ui.ViewModels
             }
         }
 
+
+
+
+        public bool TryMovePiece(int fromIndex, int toIndex)
+        {
+            int engineFrom = Board.ToEngineIndex(fromIndex);
+            int engineTo = Board.ToEngineIndex(toIndex);
+
+            var move = MoveGenerator.GetMove(engineFrom, engineTo);
+            if (!move.HasValue)
+                return false;
+
+            // Check for promotion
+            int piece = _board.Squares[engineFrom];
+            bool isPromotion = Piece.TypeOf(piece) == Piece.Pawn
+                               && (Board.RankOf(engineTo) == 7 || Board.RankOf(engineTo) == 0);
+
+            if (isPromotion)
+            {
+                _pendingPromotionMove = move;
+                PromotionRequired?.Invoke(toIndex); // tell the view which square to anchor to
+                return true;
+            }
+
+            CompleteMove(move.Value);
+            return true;
+        }
+
         public void CompletePromotion(MoveFlag flag)
         {
-            CompleteMove(_pendingPromotionFrom, _pendingPromotionTo, flag);
+            if (!_pendingPromotionMove.HasValue)
+                throw new NullReferenceException("Pending promotion move was null");
+
+            var promotionMove = new Move(_pendingPromotionMove.Value.From, _pendingPromotionMove.Value.To, flag);
+            CompleteMove(promotionMove);
             PromotionCompleted?.Invoke();
         }
 
-        private void CompleteMove(int fromIndex, int toIndex, MoveFlag flag)
+        private void CompleteMove(Move move)
         {
             foreach (var sq in Squares)
             {
@@ -106,17 +121,18 @@ namespace chess_ui.ViewModels
                 sq.IsValidMoveTarget = false;
             }
 
-            var from = Squares[fromIndex];
-            var to = Squares[toIndex];
+            var from = Squares[Board.ToUiIndex(move.From)];
+            var to = Squares[Board.ToUiIndex(move.To)];
 
             from.IsGhost = false;
             from.IsSelected = false;
             from.IsHighlighted = true;
             to.IsHighlighted = true;
 
-            _board = Board.Update(_board, from.EngineIndex, to.EngineIndex, flag);
+            _board.MakeMove(move);
+            MoveGenerator.GenerateMoves(_board);
             SyncFromBoard();
-            FullMoveNumber = _board.FullMoveNumber;
+            //FullMoveNumber = _board.FullMoveNumber;
         }
 
 
