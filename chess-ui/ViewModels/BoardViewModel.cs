@@ -5,9 +5,7 @@ using System.Linq;
 using chess_engine.Helpers;
 using chess_engine.Models;
 using chess_ui.Helpers;
-using chess_ui.Models;
 using CommunityToolkit.Mvvm.ComponentModel;
-using CommunityToolkit.Mvvm.Input;
 
 namespace chess_ui.ViewModels
 {
