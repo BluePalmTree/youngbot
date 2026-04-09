@@ -9,10 +9,10 @@ xmlns:vm="using:chess_ui.ViewModels"
 xmlns:converters="using:chess_ui.Converters"
 x:Name="mainWnd"
 Title="chess_ui"
-Width="800"
-Height="880"
+Width="920"
+Height="800"
 x:DataType="vm:BoardViewModel"
-Background="WhiteSmoke"
+Background="DarkGray"
 Icon="/Assets/avalonia-logo.ico"
 PointerMoved="OnPointerMoved"
 PointerReleased="OnPointerReleased"
@@ -21,6 +21,7 @@ mc:Ignorable="d">
         <converters:SquareBackgroundConverter x:Key="SquareBackgroundConverter" />
         <converters:PieceToImageConverter x:Key="PieceToImageConverter" />
         <converters:BoolToOpacityConverter x:Key="BoolToOpacityConverter" />
+        <converters:CastlingRightsConverter x:Key="CastlingRightsConverter" />
     </Window.Resources>
 
     <Design.DataContext>
@@ -31,7 +32,7 @@ mc:Ignorable="d">
         <vm:BoardViewModel />
     </Design.DataContext>
 
-    <Grid ColumnDefinitions="80,Auto,80" RowDefinitions="80,Auto,80,80">
+    <Grid ColumnDefinitions="80,Auto,80,120" RowDefinitions="80,Auto,80">
         <ItemsControl Grid.Row="0" Grid.Column="1" ItemsSource="{Binding Files}">
             <ItemsControl.ItemsPanel>
                 <ItemsPanelTemplate>
@@ -128,11 +129,12 @@ mc:Ignorable="d">
             </ItemsControl.ItemTemplate>
         </ItemsControl>
 
-        <StackPanel Grid.Row="3" Grid.Column="0" Grid.ColumnSpan="3" Orientation="Horizontal">
-            <TextBlock Foreground="Black">
-                <Run Text="Total Moves:"></Run>
-                <Run Text="{Binding FullMoveNumber}"></Run>
-            </TextBlock>
+        <StackPanel Grid.Column="3" Grid.Row="1" Grid.RowSpan="2" Orientation="Vertical">
+            <TextBlock Foreground="Black" Text="Castling Rights:"></TextBlock>
+            <TextBlock Foreground="Black" Text="{Binding CastlingRights, Converter={StaticResource CastlingRightsConverter}}"></TextBlock>
+            <TextBlock Foreground="Black" Text="EnPassant Square:"></TextBlock>
+            <TextBlock Foreground="Black" Text="{Binding EnPassantSquare}"></TextBlock>
+            <Button Content="Unmake" Command="{Binding UndoMoveCommand}"></Button>
         </StackPanel>
     </Grid>
 </Window>

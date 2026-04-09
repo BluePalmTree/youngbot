@@ -26,6 +26,8 @@ namespace chess_engine.Models
         // Full-move number
         public int FullMoveNumber;
 
+        public readonly Stack<GameState> GameStates;
+
         public Board()
         {
             Squares = new int[64];
@@ -34,6 +36,7 @@ namespace chess_engine.Models
             ColorToMove = Piece.White;
             HalfMoveClock = 0;
             FullMoveNumber = 1;
+            GameStates = [];
         }
 
         public static Board FromStartPosition(string fen)
@@ -85,6 +88,15 @@ namespace chess_engine.Models
 
         public void MakeMove(Move move)
         {
+            var gs = new GameState
+            {
+                EnPassantSquare = EnPassantSquare,
+                EnPassantCaptureSquare = -1,
+                CastlingRights = CastlingRights,
+                Move = move,
+                CapturedPiece = Squares[move.To]
+            };
+
             EnPassantSquare = -1;
 
             int movePiece = Piece.TypeOf(Squares[move.From]);
@@ -120,6 +132,7 @@ namespace chess_engine.Models
             if (move.Flag == MoveFlag.EnPassant)
             {
                 var takenPawn = whiteMoved ? move.To - 8 : move.To + 8;
+                gs.EnPassantCaptureSquare = takenPawn;
                 Squares[takenPawn] = Piece.None;
             }
 
@@ -144,7 +157,47 @@ namespace chess_engine.Models
             ColorToMove = ColorToMove == Piece.White ? Piece.Black : Piece.White;
             FullMoveNumber++;
 
-            MoveGenerator.GenerateMoves(this);
+            GameStates.Push(gs);
+        }
+
+        public void UnmakeLastMove()
+        {
+            if (GameStates.Count < 1)
+                return;
+
+            var gs = GameStates.Pop();
+            UnmakeMove(gs.Move, gs);
+        }
+
+        public void UnmakeMove(Move move, GameState gameState)
+        {
+            EnPassantSquare = gameState.EnPassantSquare;
+            CastlingRights = gameState.CastlingRights;
+            Squares[move.From] = Squares[move.To];
+            Squares[move.To] = gameState.CapturedPiece;
+
+            if (move.Flag == MoveFlag.KingSideCastle)
+            {
+                Squares[move.To + 1] = Squares[move.To - 1];
+                Squares[move.To - 1] = Piece.None;
+            }
+            else if (move.Flag == MoveFlag.QueenSideCastle)
+            {
+                Squares[move.To - 2] = Squares[move.To + 1];
+                Squares[move.To + 1] = Piece.None;
+            }
+
+            if (move.Flag == MoveFlag.EnPassant)
+            {
+                if (ColorToMove == Piece.White)
+                    Squares[gameState.EnPassantCaptureSquare] = Piece.Pawn | Piece.White;
+                else
+                    Squares[gameState.EnPassantCaptureSquare] = Piece.Pawn | Piece.Black;
+            }
+
+            ColorToMove = ColorToMove == Piece.White ? Piece.Black : Piece.White;
+
+            FullMoveNumber--;
         }
 
         // Square index helpers

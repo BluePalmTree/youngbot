@@ -1,12 +1,11 @@
 using System;
-using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.Diagnostics;
 using System.Linq;
 using chess_engine.Helpers;
 using chess_engine.Models;
 using chess_ui.Helpers;
 using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
 
 namespace chess_ui.ViewModels
 {
@@ -43,6 +42,8 @@ namespace chess_ui.ViewModels
             _squares = new ObservableCollection<SquareViewModel>(sq);
 
             _board = Board.FromStartPosition(StartPosition);
+            CastlingRights = _board.CastlingRights;
+            EnPassantSquare = _board.EnPassantSquare;
             SyncFromBoard();
         }
 
@@ -50,11 +51,31 @@ namespace chess_ui.ViewModels
         private ObservableCollection<SquareViewModel> _squares;
 
         [ObservableProperty]
+        [NotifyCanExecuteChangedFor(nameof(UndoMoveCommand))]
         private int _fullMoveNumber;
 
+        [ObservableProperty]
+        private int _castlingRights;
 
+        [ObservableProperty]
+        private int _enPassantSquare;
 
+        [RelayCommand(CanExecute = nameof(CanUndoMove))]
+        private void UndoMove()
+        {
+            _board.UnmakeLastMove();
+            MoveGenerator.GenerateMoves(_board);
+            SyncFromBoard();
+            FullMoveNumber = _board.GameStates.Count;
+            CastlingRights = _board.CastlingRights;
+            EnPassantSquare = _board.EnPassantSquare;
 
+            foreach (var sq in Squares)
+            {
+                sq.IsHighlighted = false;
+                sq.IsValidMoveTarget = false;
+            }
+        }
 
 
 
@@ -74,9 +95,6 @@ namespace chess_ui.ViewModels
                     Squares[Board.ToUiIndex(i)].IsValidMoveTarget = true;
             }
         }
-
-
-
 
         public bool TryMovePiece(int fromIndex, int toIndex)
         {
@@ -132,10 +150,13 @@ namespace chess_ui.ViewModels
             _board.MakeMove(move);
             MoveGenerator.GenerateMoves(_board);
             SyncFromBoard();
-            //FullMoveNumber = _board.FullMoveNumber;
+            FullMoveNumber = _board.GameStates.Count;
+            CastlingRights = _board.CastlingRights;
+            EnPassantSquare = _board.EnPassantSquare;
         }
 
 
+        private bool CanUndoMove() => _board.GameStates.Count > 0;
         private void SyncFromBoard()
         {
             for (int rank = 0; rank < BoardSize; rank++)
