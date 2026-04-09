@@ -87,7 +87,7 @@ namespace chess_engine.Helpers
                 }
             }
 
-            Debug.WriteLineIf(d, string.Join(Environment.NewLine, moves));
+            //Debug.WriteLineIf(d, string.Join(Environment.NewLine, moves));
             Moves = moves;
         }
 
@@ -107,80 +107,70 @@ namespace chess_engine.Helpers
 
         public static bool IsValidMove(int from, int to)
         {
-            foreach (var move in Moves)
-            {
-                if (move.From != from)
-                    continue;
-
-                if (move.To == to)
-                    return true;
-            }
-
-            return false;
+            return GetMove(from, to) is not null;
         }
 
         private static List<Move> GenerateKingMoves(Board board, int startSquare)
         {
             var moves = new List<Move>();
-            int n = 0;
 
             for (int directionIndex = 0; directionIndex < 8; directionIndex++)
             {
-                if (n < NumSquaresToEdge[startSquare][directionIndex])
+                if (NumSquaresToEdge[startSquare][directionIndex] < 1)
+                    continue;
+
+                int targetSquare = startSquare + DirectionOffsets[directionIndex];
+                int pieceOnTargetSquare = board.Squares[targetSquare];
+
+                // Blockes by friendly piece, so can't move any further in this direction
+                if (Piece.IsColor(pieceOnTargetSquare, board.ColorToMove))
+                    continue;
+
+                moves.Add(new Move(startSquare, targetSquare));
+
+                // Can't move any furhter in this direction after capturing opponent's piece
+                if (pieceOnTargetSquare != Piece.None && !Piece.IsColor(pieceOnTargetSquare, board.ColorToMove))
+                    continue;
+
+                if (board.CastlingRights == 0)
+                    continue;
+
+                // King side castle
+                var kingSideMask = board.ColorToMove == Piece.White ? 0b1000 : 0b0010;
+                if (directionIndex == EastIndex && (board.CastlingRights & kingSideMask) != 0)
                 {
-                    int targetSquare = startSquare + DirectionOffsets[directionIndex] * (n + 1);
-                    int pieceOnTargetSquare = board.Squares[targetSquare];
+                    targetSquare = startSquare + DirectionOffsets[directionIndex] * 2;
+                    pieceOnTargetSquare = board.Squares[targetSquare];
 
-                    // Blockes by friendly piece, so can't move any further in this direction
-                    if (Piece.IsColor(pieceOnTargetSquare, board.ColorToMove))
+                    if (pieceOnTargetSquare != Piece.None)
                         continue;
 
-                    moves.Add(new Move(startSquare, targetSquare));
+                    moves.Add(new Move(startSquare, targetSquare, MoveFlag.KingSideCastle));
+                }
 
-                    // Can't move any furhter in tis direction after capturing opponent's piece
-                    if (pieceOnTargetSquare != Piece.None && !Piece.IsColor(pieceOnTargetSquare, board.ColorToMove))
-                        continue;
+                // Queen side castle
+                var queenSideMask = board.ColorToMove == Piece.White ? 0b0100 : 0b0001;
+                if (directionIndex == WestIndex && (board.CastlingRights & queenSideMask) != 0)
+                {
+                    bool canCastleQueenSide = true;
 
-                    // Castling rules
-                    if (board.CastlingRights == 0)
-                        continue;
-
-                    var kingSideMask = board.ColorToMove == Piece.White ? 0b1000 : 0b0010;
-                    var queenSideMask = board.ColorToMove == Piece.White ? 0b0100 : 0b0001;
-
-                    if (directionIndex == EastIndex && (board.CastlingRights & kingSideMask) != 0)
+                    for (int m = 2; m < 4; m++)
                     {
-                        targetSquare = startSquare + DirectionOffsets[directionIndex] * (n + 2);
+                        targetSquare = startSquare + DirectionOffsets[directionIndex] * m;
                         pieceOnTargetSquare = board.Squares[targetSquare];
 
                         if (pieceOnTargetSquare != Piece.None)
-                            continue;
-
-                        moves.Add(new Move(startSquare, targetSquare, MoveFlag.KingSideCastle));
-                    }
-
-                    if (directionIndex == WestIndex && (board.CastlingRights & queenSideMask) != 0)
-                    {
-                        bool canCastleQueenSide = true;
-
-                        for (int m = 2; m < 4; m++)
                         {
-                            targetSquare = startSquare + DirectionOffsets[directionIndex] * (n + m);
-                            pieceOnTargetSquare = board.Squares[targetSquare];
-
-                            if (pieceOnTargetSquare != Piece.None)
-                            {
-                                canCastleQueenSide = false;
-                                break;
-                            }
+                            canCastleQueenSide = false;
+                            break;
                         }
-
-                        if (!canCastleQueenSide)
-                            continue;
-
-                        targetSquare = startSquare + DirectionOffsets[directionIndex] * (n + 2);
-                        moves.Add(new Move(startSquare, targetSquare, MoveFlag.QueenSideCastle));
                     }
+
+                    if (!canCastleQueenSide)
+                        continue;
+
+                    targetSquare = startSquare + DirectionOffsets[directionIndex] * 2;
+                    moves.Add(new Move(startSquare, targetSquare, MoveFlag.QueenSideCastle));
                 }
             }
 
@@ -190,40 +180,66 @@ namespace chess_engine.Helpers
         private static List<Move> GenerateKnightMoves(Board board, int startSquare)
         {
             var moves = new List<Move>();
-            int mainDir = 1;
-            int secondaryDir = 0;
 
             for (int directionIndex = 0; directionIndex < 4; directionIndex++)
             {
-                if (mainDir < NumSquaresToEdge[startSquare][directionIndex])
+                // Needs at least 2 squares in the "main" direction
+                if (NumSquaresToEdge[startSquare][directionIndex] < 2)
+                    continue;
+
+                int mainDirSquare = startSquare + DirectionOffsets[directionIndex] * 2;
+
+                // if directionIndex is N or S then W/E are the sedony directins; else N/S
+                int startDirIndex = directionIndex == NorthIndex || directionIndex == SouthIndex ? 2 : 0;
+                int endDirIndex = startDirIndex + 2;
+
+                for (int secondaryDirIndex = startDirIndex; secondaryDirIndex < endDirIndex; secondaryDirIndex++)
                 {
-                    int tmpSquare = startSquare + DirectionOffsets[directionIndex] * (mainDir + 1);
-                    int si = directionIndex == NorthIndex || directionIndex == SouthIndex ? 2 : 0;
-                    int ei = si + 2;
+                    // Need at least 1 square in the "secondary" direction
+                    if (NumSquaresToEdge[mainDirSquare][secondaryDirIndex] < 1)
+                        continue;
 
-                    for (int s = si; s < ei; s++)
-                    {
-                        int secondarySqToEdge = NumSquaresToEdge[tmpSquare][s];
-                        if (secondaryDir < secondarySqToEdge)
-                        {
-                            int targetSquare = tmpSquare + DirectionOffsets[s] * (secondaryDir + 1);
-                            int pieceOnTargetSquare = board.Squares[targetSquare];
+                    int targetSquare = mainDirSquare + DirectionOffsets[secondaryDirIndex];
+                    int pieceOnTargetSquare = board.Squares[targetSquare];
 
-                            // Blockes by friendly piece, so can't move any further in this direction
-                            if (Piece.IsColor(pieceOnTargetSquare, board.ColorToMove))
-                            {
-                                continue;
-                            }
+                    // Blockes by friendly piece, so can't move any further in this direction
+                    if (Piece.IsColor(pieceOnTargetSquare, board.ColorToMove))
+                        continue;
 
-                            moves.Add(new Move(startSquare, targetSquare));
+                    moves.Add(new Move(startSquare, targetSquare));
 
-                            // Can't move any furhter in tis direction after capturing opponent's piece
-                            if (pieceOnTargetSquare != Piece.None && !Piece.IsColor(pieceOnTargetSquare, board.ColorToMove))
-                            {
-                                continue;
-                            }
-                        }
-                    }
+                    // Can't move any furhter in this direction after capturing opponent's piece
+                    if (pieceOnTargetSquare != Piece.None && !Piece.IsColor(pieceOnTargetSquare, board.ColorToMove))
+                        continue;
+                }
+            }
+
+            return moves;
+        }
+
+        private static List<Move> GenerateSlidingMoves(Board board, int startSquare, int piece)
+        {
+            var moves = new List<Move>();
+
+            int startDirIndex = Piece.TypeOf(piece) == Piece.Bishop ? 4 : 0;
+            int endDirIndex = Piece.TypeOf(piece) == Piece.Rook ? 4 : 8;
+
+            for (int directionIndex = startDirIndex; directionIndex < endDirIndex; directionIndex++)
+            {
+                for (int n = 0; n < NumSquaresToEdge[startSquare][directionIndex]; n++)
+                {
+                    int targetSquare = startSquare + DirectionOffsets[directionIndex] * (n + 1);
+                    int pieceOnTargetSquare = board.Squares[targetSquare];
+
+                    // Blockes by friendly piece, so can't move any further in this direction
+                    if (Piece.IsColor(pieceOnTargetSquare, board.ColorToMove))
+                        break;
+
+                    moves.Add(new Move(startSquare, targetSquare));
+
+                    // Can't move any furhter in this direction after capturing opponent's piece
+                    if (pieceOnTargetSquare != Piece.None && !Piece.IsColor(pieceOnTargetSquare, board.ColorToMove))
+                        break;
                 }
             }
 
@@ -295,39 +311,6 @@ namespace chess_engine.Helpers
 
                 if (pieceOnTargetSquare != Piece.None && !Piece.IsColor(pieceOnTargetSquare, board.ColorToMove))
                     moves.Add(new Move(startSquare, targetSquare));
-            }
-
-            return moves;
-        }
-
-        private static List<Move> GenerateSlidingMoves(Board board, int startSquare, int piece)
-        {
-            var moves = new List<Move>();
-
-            int startDirIndex = Piece.TypeOf(piece) == Piece.Bishop ? 4 : 0;
-            int endDirIndex = Piece.TypeOf(piece) == Piece.Rook ? 4 : 8;
-
-            for (int directionIndex = startDirIndex; directionIndex < endDirIndex; directionIndex++)
-            {
-                for (int n = 0; n < NumSquaresToEdge[startSquare][directionIndex]; n++)
-                {
-                    int targetSquare = startSquare + DirectionOffsets[directionIndex] * (n + 1);
-                    int pieceOnTargetSquare = board.Squares[targetSquare];
-
-                    // Blockes by friendly piece, so can't move any further in this direction
-                    if (Piece.IsColor(pieceOnTargetSquare, board.ColorToMove))
-                    {
-                        break;
-                    }
-
-                    moves.Add(new Move(startSquare, targetSquare));
-
-                    // Can't move any furhter in tis direction after capturing opponent's piece
-                    if (pieceOnTargetSquare != Piece.None && !Piece.IsColor(pieceOnTargetSquare, board.ColorToMove))
-                    {
-                        break;
-                    }
-                }
             }
 
             return moves;
