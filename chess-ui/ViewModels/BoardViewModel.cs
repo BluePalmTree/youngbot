@@ -78,9 +78,10 @@ namespace chess_ui.ViewModels
         }
 
         [RelayCommand]
-        private void RunPerft()
+        private void RunPerft(object? parameter)
         {
-            Perft.Divide(_board, 4);
+            if (parameter is not null && int.TryParse(parameter.ToString(), out int depth))
+                Perft.Divide(_board, depth);
         }
 
 

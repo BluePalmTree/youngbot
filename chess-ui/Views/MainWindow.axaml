@@ -135,7 +135,21 @@ mc:Ignorable="d">
             <TextBlock Foreground="Black" Text="EnPassant Square:"></TextBlock>
             <TextBlock Foreground="Black" Text="{Binding EnPassantSquare}"></TextBlock>
             <Button Content="Unmake" Command="{Binding UndoMoveCommand}"></Button>
-            <Button Content="Perft" Command="{Binding RunPerftCommand}"></Button>
+            <Button Content="Perft">
+                <Button.Flyout>
+                    <MenuFlyout>
+                        <MenuItem Header="1" Command="{Binding RunPerftCommand}" CommandParameter="1" />
+                        <MenuItem Header="2" Command="{Binding RunPerftCommand}" CommandParameter="2" />
+                        <MenuItem Header="3" Command="{Binding RunPerftCommand}" CommandParameter="3" />
+                        <MenuItem Header="4" Command="{Binding RunPerftCommand}" CommandParameter="4" />
+                        <MenuItem Header="5" Command="{Binding RunPerftCommand}" CommandParameter="5" />
+                        <MenuItem Header="6" Command="{Binding RunPerftCommand}" CommandParameter="6" />
+                        <MenuItem Header="7" Command="{Binding RunPerftCommand}" CommandParameter="7" />
+                        <MenuItem Header="8" Command="{Binding RunPerftCommand}" CommandParameter="8" />
+                        <MenuItem Header="9" Command="{Binding RunPerftCommand}" CommandParameter="9" />
+                    </MenuFlyout>
+                </Button.Flyout>
+            </Button>
         </StackPanel>
     </Grid>
 </Window>

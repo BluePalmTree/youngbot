@@ -187,6 +187,17 @@ namespace chess_engine.Models
                 Squares[move.To + 1] = Piece.None;
             }
 
+            ColorToMove = ColorToMove == Piece.White ? Piece.Black : Piece.White;
+
+            if (move.Flag == MoveFlag.PromoteKnight || move.Flag == MoveFlag.PromoteBishop
+                || move.Flag == MoveFlag.PromoteRook || move.Flag == MoveFlag.PromoteQueen)
+            {
+                if (ColorToMove == Piece.White)
+                    Squares[move.From] = Piece.Pawn | Piece.White;
+                else
+                    Squares[move.From] = Piece.Pawn | Piece.Black;
+            }
+
             if (move.Flag == MoveFlag.EnPassant)
             {
                 if (ColorToMove == Piece.White)
@@ -194,8 +205,6 @@ namespace chess_engine.Models
                 else
                     Squares[gameState.EnPassantCaptureSquare] = Piece.Pawn | Piece.Black;
             }
-
-            ColorToMove = ColorToMove == Piece.White ? Piece.Black : Piece.White;
 
             FullMoveNumber--;
         }
