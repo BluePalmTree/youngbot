@@ -2,6 +2,7 @@ using System;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Linq;
+using chess_engine.Bots;
 using chess_engine.Helpers;
 using chess_engine.Models;
 using chess_ui.Helpers;
@@ -17,6 +18,7 @@ namespace chess_ui.ViewModels
         //private const string StartPosition = "8/8/8/2k5/4K3/8/8/8 w KQkq - 0 1";
         private readonly Board _board;
         private Move? _pendingPromotionMove;
+        private readonly int _botColor = Piece.Black;
 
         public string[] Ranks { get; } // rows        
         public string[] Files { get; } // columns
@@ -139,6 +141,10 @@ namespace chess_ui.ViewModels
             PromotionCompleted?.Invoke();
         }
 
+
+        // -- Private Methods -----------------------------------
+        private bool CanUndoMove() => _board.GameStates.Count > 0;
+
         private void CompleteMove(Move move)
         {
             foreach (var sq in Squares)
@@ -164,10 +170,27 @@ namespace chess_ui.ViewModels
             FullMoveNumber = _board.GameStates.Count;
             CastlingRights = _board.CastlingRights;
             EnPassantSquare = _board.EnPassantSquare;
+
+            MakeBotMoveIfNeeded();
         }
 
+        private void MakeBotMoveIfNeeded()
+        {
+            if (_board.ColorToMove != _botColor)
+                return;
 
-        private bool CanUndoMove() => _board.GameStates.Count > 0;
+            var move = RandomBot.PickMove();
+
+            if (move is null)
+            {
+                // No legal moves — checkmate or stalemate
+                Debug.WriteLine("Game over: no legal moves for bot.");
+                return;
+            }
+
+            CompleteMove(move.Value);
+        }
+
         private void SyncFromBoard()
         {
             for (int rank = 0; rank < BoardSize; rank++)
