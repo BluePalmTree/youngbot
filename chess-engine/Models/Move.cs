@@ -1,6 +1,5 @@
 namespace chess_engine.Models
 {
-
     // ushort bit layout (future):
     // [15..10] from-square (6 bits, 0-63)
     // [9..4]   to-square   (6 bits, 0-63)
@@ -26,7 +25,11 @@ namespace chess_engine.Models
 
         public override string ToString()
         {
-            return $"{From}->{To}";
+            var fromRank = Board.RankOf(From) + 1;
+            var fromFile = Board.FileOf(From);
+            var toRank = Board.RankOf(To) + 1;
+            var toFile = Board.FileOf(To);
+            return $"{(char)('a' + fromFile)}{fromRank}->{(char)('a' + toFile)}{toRank}";
         }
     }
 

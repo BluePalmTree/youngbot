@@ -77,6 +77,11 @@ namespace chess_ui.ViewModels
             }
         }
 
+        [RelayCommand]
+        private void RunPerft()
+        {
+            Perft.Divide(_board, 4);
+        }
 
 
         public void SelectSquare(int index)

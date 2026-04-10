@@ -135,6 +135,7 @@ mc:Ignorable="d">
             <TextBlock Foreground="Black" Text="EnPassant Square:"></TextBlock>
             <TextBlock Foreground="Black" Text="{Binding EnPassantSquare}"></TextBlock>
             <Button Content="Unmake" Command="{Binding UndoMoveCommand}"></Button>
+            <Button Content="Perft" Command="{Binding RunPerftCommand}"></Button>
         </StackPanel>
     </Grid>
 </Window>
