@@ -7,5 +7,6 @@ namespace chess_engine.Models
         public int CastlingRights;
         public int CapturedPiece;
         public Move Move;
+        public string FEN;
     }
 }

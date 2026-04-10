@@ -1,5 +1,6 @@
 using System;
 using System.Collections.ObjectModel;
+using System.Diagnostics;
 using System.Linq;
 using chess_engine.Helpers;
 using chess_engine.Models;
@@ -13,6 +14,7 @@ namespace chess_ui.ViewModels
     {
         private const byte BoardSize = 8;
         private const string StartPosition = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
+        //private const string StartPosition = "8/8/8/2k5/4K3/8/8/8 w KQkq - 0 1";
         private readonly Board _board;
         private Move? _pendingPromotionMove;
 
@@ -64,7 +66,7 @@ namespace chess_ui.ViewModels
         private void UndoMove()
         {
             _board.UnmakeLastMove();
-            MoveGenerator.GenerateMoves(_board);
+            MoveGenerator.GenerateLegalMoves(_board);
             SyncFromBoard();
             FullMoveNumber = _board.GameStates.Count;
             CastlingRights = _board.CastlingRights;
@@ -153,8 +155,11 @@ namespace chess_ui.ViewModels
             from.IsHighlighted = true;
             to.IsHighlighted = true;
 
-            _board.MakeMove(move);
-            MoveGenerator.GenerateMoves(_board);
+            _board.MakeMove(move, true);
+            //var fenBef = _board.GetFEN();
+            MoveGenerator.GenerateLegalMoves(_board);
+            //var fenAft = _board.GetFEN();
+            //Debug.Assert(fenAft.Equals(fenBef, StringComparison.CurrentCulture), $"FENs are diff | Before: {fenBef} | After: {fenAft}");
             SyncFromBoard();
             FullMoveNumber = _board.GameStates.Count;
             CastlingRights = _board.CastlingRights;

@@ -1,3 +1,5 @@
+using System.Diagnostics;
+using System.Text;
 using chess_engine.Helpers;
 
 namespace chess_engine.Models
@@ -27,6 +29,8 @@ namespace chess_engine.Models
         public int FullMoveNumber;
 
         public readonly Stack<GameState> GameStates;
+
+        public bool Checkmate;
 
         public Board()
         {
@@ -81,20 +85,27 @@ namespace chess_engine.Models
             }
 
             MoveGenerator.PrecomputedMoveData();
-            MoveGenerator.GenerateMoves(board);
+            MoveGenerator.GenerateLegalMoves(board);
 
             return board;
         }
 
-        public void MakeMove(Move move)
+        public void MakeMove(Move move, bool uiMove = false)
         {
+            if (Piece.TypeOf(Squares[move.To]) == Piece.King)
+            {
+                Checkmate = true;
+                Debug.WriteLine($"Checkmate for {(ColorToMove == Piece.White ? "White" : "Black")}");
+            }
+
             var gs = new GameState
             {
                 EnPassantSquare = EnPassantSquare,
                 EnPassantCaptureSquare = -1,
                 CastlingRights = CastlingRights,
                 Move = move,
-                CapturedPiece = Squares[move.To]
+                CapturedPiece = Squares[move.To],
+                //FEN = GetFEN(),
             };
 
             EnPassantSquare = -1;
@@ -137,20 +148,23 @@ namespace chess_engine.Models
             }
 
             // Pawn Promotions
-            if (move.Flag == MoveFlag.PromoteQueen) Squares[move.To] = Piece.ColorOf(Squares[move.To]) | Piece.Queen;
-            if (move.Flag == MoveFlag.PromoteRook) Squares[move.To] = Piece.ColorOf(Squares[move.To]) | Piece.Rook;
-            if (move.Flag == MoveFlag.PromoteBishop) Squares[move.To] = Piece.ColorOf(Squares[move.To]) | Piece.Bishop;
-            if (move.Flag == MoveFlag.PromoteKnight) Squares[move.To] = Piece.ColorOf(Squares[move.To]) | Piece.Knight;
+            if (move.IsPromotion)
+            {
+                if (move.Flag == MoveFlag.PromoteQueen) Squares[move.To] = Piece.ColorOf(Squares[move.To]) | Piece.Queen;
+                if (move.Flag == MoveFlag.PromoteRook) Squares[move.To] = Piece.ColorOf(Squares[move.To]) | Piece.Rook;
+                if (move.Flag == MoveFlag.PromoteBishop) Squares[move.To] = Piece.ColorOf(Squares[move.To]) | Piece.Bishop;
+                if (move.Flag == MoveFlag.PromoteKnight) Squares[move.To] = Piece.ColorOf(Squares[move.To]) | Piece.Knight;
+            }
 
             // Castling
             if (move.Flag == MoveFlag.KingSideCastle)
             {
-                Squares[move.From + 1] = Squares[move.To + 1];
+                Squares[move.To - 1] = Squares[move.To + 1];
                 Squares[move.To + 1] = Piece.None;
             }
             else if (move.Flag == MoveFlag.QueenSideCastle)
             {
-                Squares[move.From - 1] = Squares[move.To - 2];
+                Squares[move.To + 1] = Squares[move.To - 2];
                 Squares[move.To - 2] = Piece.None;
             }
 
@@ -171,11 +185,13 @@ namespace chess_engine.Models
 
         public void UnmakeMove(Move move, GameState gameState)
         {
+            Checkmate = false;
             EnPassantSquare = gameState.EnPassantSquare;
             CastlingRights = gameState.CastlingRights;
             Squares[move.From] = Squares[move.To];
             Squares[move.To] = gameState.CapturedPiece;
 
+            // Castling
             if (move.Flag == MoveFlag.KingSideCastle)
             {
                 Squares[move.To + 1] = Squares[move.To - 1];
@@ -189,8 +205,8 @@ namespace chess_engine.Models
 
             ColorToMove = ColorToMove == Piece.White ? Piece.Black : Piece.White;
 
-            if (move.Flag == MoveFlag.PromoteKnight || move.Flag == MoveFlag.PromoteBishop
-                || move.Flag == MoveFlag.PromoteRook || move.Flag == MoveFlag.PromoteQueen)
+            // Promotion
+            if (move.IsPromotion)
             {
                 if (ColorToMove == Piece.White)
                     Squares[move.From] = Piece.Pawn | Piece.White;
@@ -198,12 +214,13 @@ namespace chess_engine.Models
                     Squares[move.From] = Piece.Pawn | Piece.Black;
             }
 
+            // En Passant
             if (move.Flag == MoveFlag.EnPassant)
             {
                 if (ColorToMove == Piece.White)
-                    Squares[gameState.EnPassantCaptureSquare] = Piece.Pawn | Piece.White;
-                else
                     Squares[gameState.EnPassantCaptureSquare] = Piece.Pawn | Piece.Black;
+                else
+                    Squares[gameState.EnPassantCaptureSquare] = Piece.Pawn | Piece.White;
             }
 
             FullMoveNumber--;
@@ -226,6 +243,166 @@ namespace chess_engine.Models
             var rank = 7 - RankOf(uiIndex); // flip rank: UI row 0 = engine rank 7
             var file = FileOf(uiIndex);
             return IndexOf(file, rank);
+        }
+
+        public int GetKingSqaure(int color)
+        {
+            for (int i = 0; i < 64; i++)
+            {
+                if (Piece.TypeOf(Squares[i]) == Piece.King)
+                {
+                    if (Piece.IsColor(Squares[i], color))
+                        return i;
+                }
+            }
+
+            return -1;
+        }
+
+        public string GetFEN()
+        {
+            var sb = new StringBuilder();
+            int emptySquares = 0;
+
+            for (int r = 0; r < 8; r++)
+            {
+                for (int f = 0; f < 8; f++)
+                {
+                    var piece = Squares[ToUiIndex(r, f)];
+                    bool resetEmptySquares = true;
+                    char? pieceToAppend;
+
+                    if (Piece.TypeOf(piece) == Piece.Rook)
+                    {
+                        if (Piece.IsColor(piece, Piece.White))
+                            pieceToAppend = 'R';
+                        else
+                            pieceToAppend = 'r';
+                    }
+                    else if (Piece.TypeOf(piece) == Piece.Knight)
+                    {
+                        if (Piece.IsColor(piece, Piece.White))
+                            pieceToAppend = 'N';
+                        else
+                            pieceToAppend = 'n';
+                    }
+                    else if (Piece.TypeOf(piece) == Piece.Bishop)
+                    {
+                        if (Piece.IsColor(piece, Piece.White))
+                            pieceToAppend = 'B';
+                        else
+                            pieceToAppend = 'b';
+                    }
+                    else if (Piece.TypeOf(piece) == Piece.Queen)
+                    {
+                        if (Piece.IsColor(piece, Piece.White))
+                            pieceToAppend = 'Q';
+                        else
+                            pieceToAppend = 'q';
+                    }
+                    else if (Piece.TypeOf(piece) == Piece.King)
+                    {
+                        if (Piece.IsColor(piece, Piece.White))
+                            pieceToAppend = 'K';
+                        else
+                            pieceToAppend = 'k';
+                    }
+                    else if (Piece.TypeOf(piece) == Piece.Pawn)
+                    {
+                        if (Piece.IsColor(piece, Piece.White))
+                            pieceToAppend = 'P';
+                        else
+                            pieceToAppend = 'p';
+                    }
+                    else if (Piece.TypeOf(piece) == Piece.None)
+                    {
+                        emptySquares++;
+                        resetEmptySquares = false;
+                        pieceToAppend = null;
+                    }
+                    else
+                        throw new NotImplementedException("Piece type not implemented");
+
+
+                    if (emptySquares > 0 && resetEmptySquares)
+                    {
+                        sb.Append(emptySquares);
+                        emptySquares = 0;
+                    }
+
+                    if (pieceToAppend is not null)
+                        sb.Append(pieceToAppend);
+                }
+
+                if (emptySquares > 0)
+                    sb.Append(emptySquares);
+
+                if (r < 7)
+                    sb.Append('/');
+
+                emptySquares = 0;
+            }
+
+            sb.Append(' ');
+
+            if (ColorToMove == Piece.White)
+                sb.Append('w');
+            else
+                sb.Append('b');
+
+            sb.Append(' ');
+
+            if (CastlingRights > 0)
+            {
+                if ((CastlingRights & 0b1000) != 0) sb.Append('K');
+                if ((CastlingRights & 0b0100) != 0) sb.Append('Q');
+                if ((CastlingRights & 0b0010) != 0) sb.Append('k');
+                if ((CastlingRights & 0b0001) != 0) sb.Append('q');
+            }
+            else
+                sb.Append('-');
+
+            sb.Append(' ');
+
+            if (EnPassantSquare != -1)
+                sb.Append($"{(char)('a' + FileOf(EnPassantSquare))}{RankOf(EnPassantSquare) + 1}");
+            else
+                sb.Append('-');
+
+            sb.Append(' ');
+            sb.Append(HalfMoveClock);
+
+            sb.Append(' ');
+            sb.Append(FullMoveNumber);
+
+            string fen = sb.ToString();
+            return fen;
+        }
+
+        public void AssertIntegrity()
+        {
+            int whitePawns = 0, blackPawns = 0;
+            int whiteKings = 0, blackKings = 0;
+
+            for (int i = 0; i < 64; i++)
+            {
+                int t = Piece.TypeOf(Squares[i]);
+                int c = Piece.ColorOf(Squares[i]);
+                if (t == Piece.Pawn && c == Piece.White) whitePawns++;
+                if (t == Piece.Pawn && c == Piece.Black) blackPawns++;
+                if (t == Piece.King && c == Piece.White) whiteKings++;
+                if (t == Piece.King && c == Piece.Black) blackKings++;
+            }
+
+            Debug.Assert(whitePawns <= 8, $"Too many white pawns: {whitePawns} | FEN: {GetFEN()} | GameStates: {GetGameState()}");
+            Debug.Assert(blackPawns <= 8, $"Too many black pawns: {blackPawns} | FEN: {GetFEN()} | GameStates: {GetGameState()}");
+            Debug.Assert(whiteKings == 1, $"White king count wrong: {whiteKings} | FEN: {GetFEN()} | GameStates: {GetGameState()}");
+            Debug.Assert(blackKings == 1, $"Black king count wrong: {blackKings} | FEN: {GetFEN()} | GameStates: {GetGameState()}");
+        }
+
+        public string GetGameState()
+        {
+            return string.Join(", ", GameStates.Select(x => x.Move));
         }
     }
 }

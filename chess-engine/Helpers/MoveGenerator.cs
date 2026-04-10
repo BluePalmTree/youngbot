@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using chess_engine.Models;
 
 namespace chess_engine.Helpers
@@ -49,7 +50,64 @@ namespace chess_engine.Helpers
             }
         }
 
-        public static void GenerateMoves(Board board)
+        public static void GenerateLegalMoves(Board board)
+        {
+            if (board.Checkmate)
+            {
+                Moves = [];
+                return;
+            }
+
+            List<Move> pseudoLegalMoves = GenerateMoves(board);
+            List<Move> legalMoves = [];
+
+            var orgColorToMove = board.ColorToMove;
+            var kingSquare = board.GetKingSqaure(board.ColorToMove);
+            if (kingSquare == -1)
+            {
+                Moves = legalMoves;
+                Debug.WriteLine($"No king found for {(board.ColorToMove == Piece.White ? "White" : "Black")} | FEN: {board.GetFEN()}");
+                return;
+            }
+
+            foreach (var moveToVerify in pseudoLegalMoves)
+            {
+                board.MakeMove(moveToVerify);
+                if (board.Checkmate)
+                {
+                    board.UnmakeLastMove();
+                    Debug.WriteLine($"Checkmate FEN: {board.GetFEN()}");
+                    continue;
+                }
+
+                kingSquare = board.GetKingSqaure(orgColorToMove);
+                if (kingSquare == -1)
+                    Debug.WriteLine($"FEN: {board.GetFEN()}");
+
+                List<Move> opponentResponses = GenerateMoves(board);
+
+                if (!opponentResponses.Any(r => r.To == kingSquare))
+                    legalMoves.Add(moveToVerify);
+                //else
+                // {
+                //Debug.WriteLine($"Move {moveToVerify} has responses that leave the king ({kingSquare}) in check:");
+                //     var rs = opponentResponses.Where(r => r.To == kingSquare).ToArray();
+                //     foreach (var r in rs)
+                //         Console.WriteLine($"  {r}");
+                // }
+
+                board.UnmakeLastMove();
+                //board.AssertIntegrity();
+            }
+
+            if (legalMoves.Count == 0)
+                Debug.WriteLine($"No legal moves for {(board.ColorToMove == Piece.White ? "White" : "Black")} left. Checkmate!");
+
+            Moves = legalMoves;
+        }
+
+
+        public static List<Move> GenerateMoves(Board board)
         {
             var moves = new List<Move>();
 
@@ -87,7 +145,7 @@ namespace chess_engine.Helpers
             }
 
             //Debug.WriteLineIf(d, string.Join(Environment.NewLine, moves));
-            Moves = moves;
+            return moves;
         }
 
         public static int[] GetValidMovesForSquare(int square)
