@@ -264,15 +264,15 @@ namespace chess_ui.ViewModels
 
         private void SetGameOver()
         {
-            bool isHumarnTurn = (IsBlackBot && IsWhiteBot) ? false : true;
-            string side = isHumarnTurn ? "You have" : "Bot has";
+            bool isWhiteTurn = _board.ColorToMove == Piece.White;
+            string side = isWhiteTurn ? "White has" : "Black has";
 
             GameStatus = GameStatus.Stalemate;
             GameOverMessage = $"Stalemate — {side} no legal moves.";
 
             if (HalfMoveClock >= 50)
             {
-                GameOverMessage = "Fifty-Move rule brocken";
+                GameOverMessage = "Fifty-Move rule broken";
             }
             else if (_board.IsInCheck())
             {

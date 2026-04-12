@@ -264,16 +264,15 @@ namespace chess_engine.Models
 
         public bool IsInCheck()
         {
-            var white = GetKingSquare(Piece.White);
-            var black = GetKingSquare(Piece.Black);
+            int kingSquare = GetKingSquare(ColorToMove);
+            if (kingSquare == -1) return false;
 
-            foreach (var move in MoveGenerator.Moves)
-            {
-                if (move.To == white || move.To == black)
-                    return true;
-            }
+            // Temporarily flip the turn so GenerateMoves produces opponent moves
+            ColorToMove = ColorToMove == Piece.White ? Piece.Black : Piece.White;
+            var opponentMoves = MoveGenerator.GenerateMoves(this);
+            ColorToMove = ColorToMove == Piece.White ? Piece.Black : Piece.White;
 
-            return false;
+            return opponentMoves.Any(m => m.To == kingSquare);
         }
 
         public string GetFEN()
