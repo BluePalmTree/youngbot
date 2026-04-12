@@ -321,7 +321,7 @@ namespace chess_engine.Helpers
                         if (pieceOnTargetSquare == Piece.None)
                         {
                             var mf = n == 2 ? MoveFlag.DoublePawnPush : MoveFlag.Normal;
-                            moves.Add(new Move(startSquare, targetSquare, mf));
+                            moves.Add(new Move(startSquare, targetSquare, mf, Prom(targetSquare)));
                         }
                         else
                         {
@@ -335,7 +335,7 @@ namespace chess_engine.Helpers
                     int pieceOnTargetSquare = board.Squares[targetSquare];
 
                     if (pieceOnTargetSquare == Piece.None)
-                        moves.Add(new Move(startSquare, targetSquare));
+                        moves.Add(new Move(startSquare, targetSquare, MoveFlag.Normal, Prom(targetSquare)));
                 }
             }
 
@@ -346,10 +346,10 @@ namespace chess_engine.Helpers
                 int pieceOnTargetSquare = board.Squares[targetSquare];
 
                 if (targetSquare == board.EnPassantSquare)
-                    moves.Add(new Move(startSquare, targetSquare, MoveFlag.EnPassant));
+                    moves.Add(new Move(startSquare, targetSquare, MoveFlag.EnPassant, Prom(targetSquare)));
 
                 if (pieceOnTargetSquare != Piece.None && !Piece.IsColor(pieceOnTargetSquare, board.ColorToMove))
-                    moves.Add(new Move(startSquare, targetSquare));
+                    moves.Add(new Move(startSquare, targetSquare, MoveFlag.Normal, Prom(targetSquare)));
             }
 
             var northEast = NumSquaresToEdge[startSquare][NorthEastIndex + whiteIndex];
@@ -359,13 +359,16 @@ namespace chess_engine.Helpers
                 int pieceOnTargetSquare = board.Squares[targetSquare];
 
                 if (targetSquare == board.EnPassantSquare)
-                    moves.Add(new Move(startSquare, targetSquare, MoveFlag.EnPassant));
+                    moves.Add(new Move(startSquare, targetSquare, MoveFlag.EnPassant, Prom(targetSquare)));
 
                 if (pieceOnTargetSquare != Piece.None && !Piece.IsColor(pieceOnTargetSquare, board.ColorToMove))
-                    moves.Add(new Move(startSquare, targetSquare));
+                    moves.Add(new Move(startSquare, targetSquare, MoveFlag.Normal, Prom(targetSquare)));
             }
 
             return moves;
         }
+
+        // if true pawn needs to promote
+        private static bool Prom(int targetSquare) => Board.RankOf(targetSquare) is 0 or 7;
     }
 }

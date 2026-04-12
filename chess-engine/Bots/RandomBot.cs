@@ -13,7 +13,11 @@ namespace chess_engine.Bots
             if (moves.Count == 0)
                 return null;
 
-            return moves[rng.Next(moves.Count)];
+            var move = moves[rng.Next(moves.Count)];
+            if (move.PromotionNeeded)
+                return new Move(move.From, move.To, MoveFlag.PromoteQueen);
+
+            return move;
         }
     }
 }

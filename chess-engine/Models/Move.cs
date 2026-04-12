@@ -11,12 +11,15 @@ namespace chess_engine.Models
         public readonly int From;        // 0–63
         public readonly int To;          // 0–63
         public readonly MoveFlag Flag;
+        public readonly bool PromotionNeeded;
 
-        public Move(int from, int to, MoveFlag flag = MoveFlag.Normal)
+
+        public Move(int from, int to, MoveFlag flag = MoveFlag.Normal, bool promotionNeeded = false)
         {
             From = from;
             To = to;
             Flag = flag;
+            PromotionNeeded = promotionNeeded;
         }
 
         public bool IsPromotion => Flag is
