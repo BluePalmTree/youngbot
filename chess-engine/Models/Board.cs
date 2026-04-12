@@ -37,7 +37,7 @@ namespace chess_engine.Models
             EnPassantSquare = -1;
             ColorToMove = Piece.White;
             HalfMoveClock = 0;
-            FullMoveNumber = 1;
+            FullMoveNumber = 0;
             GameStates = [];
         }
 
@@ -98,12 +98,23 @@ namespace chess_engine.Models
                 Move = move,
                 CapturedPiece = Squares[move.To],
                 //FEN = GetFEN(),
+                HalfMoveClock = HalfMoveClock,
+                FullMoveNumber = FullMoveNumber,
             };
 
             EnPassantSquare = -1;
 
             int movePiece = Piece.TypeOf(Squares[move.From]);
             var whiteMoved = ColorToMove == Piece.White;
+
+            // Reset on capture or pawn move, otherwise increment
+            bool isCapture = gs.CapturedPiece != Piece.None || move.Flag == MoveFlag.EnPassant;
+            bool isPawnMove = movePiece == Piece.Pawn;
+
+            if (isCapture || isPawnMove)
+                HalfMoveClock = 0;
+            else
+                HalfMoveClock++;
 
             // Update castling rights
             if (CastlingRights > 0 && (movePiece == Piece.King || movePiece == Piece.Rook))
@@ -161,7 +172,8 @@ namespace chess_engine.Models
             }
 
             ColorToMove = ColorToMove == Piece.White ? Piece.Black : Piece.White;
-            FullMoveNumber++;
+            if (!whiteMoved)
+                FullMoveNumber++;
 
             GameStates.Push(gs);
         }
@@ -181,6 +193,8 @@ namespace chess_engine.Models
             CastlingRights = gameState.CastlingRights;
             Squares[move.From] = Squares[move.To];
             Squares[move.To] = gameState.CapturedPiece;
+            HalfMoveClock = gameState.HalfMoveClock;
+            FullMoveNumber = gameState.FullMoveNumber;
 
             // Castling
             if (move.Flag == MoveFlag.KingSideCastle)
@@ -213,8 +227,6 @@ namespace chess_engine.Models
                 else
                     Squares[gameState.EnPassantCaptureSquare] = Piece.Pawn | Piece.White;
             }
-
-            FullMoveNumber--;
         }
 
         // Square index helpers
@@ -236,7 +248,7 @@ namespace chess_engine.Models
             return IndexOf(file, rank);
         }
 
-        public int GetKingSqaure(int color)
+        public int GetKingSquare(int color)
         {
             for (int i = 0; i < 64; i++)
             {
@@ -248,6 +260,20 @@ namespace chess_engine.Models
             }
 
             return -1;
+        }
+
+        public bool IsInCheck()
+        {
+            var white = GetKingSquare(Piece.White);
+            var black = GetKingSquare(Piece.Black);
+
+            foreach (var move in MoveGenerator.Moves)
+            {
+                if (move.To == white || move.To == black)
+                    return true;
+            }
+
+            return false;
         }
 
         public string GetFEN()

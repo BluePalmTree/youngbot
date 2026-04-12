@@ -8,5 +8,7 @@ namespace chess_engine.Models
         public int CapturedPiece;
         public Move Move;
         public string FEN;
+        public int HalfMoveClock;
+        public int FullMoveNumber;
     }
 }

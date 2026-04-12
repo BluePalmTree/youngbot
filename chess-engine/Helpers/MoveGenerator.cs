@@ -25,9 +25,6 @@ namespace chess_engine.Helpers
 
         public static void PrecomputedMoveData()
         {
-            if (NumSquaresToEdge.Length > 0)
-                return;
-
             for (int rank = 0; rank < 8; rank++)
             {
                 for (int file = 0; file < 8; file++)
@@ -59,7 +56,7 @@ namespace chess_engine.Helpers
             List<Move> legalMoves = [];
 
             var orgColorToMove = board.ColorToMove;
-            var kingSquare = board.GetKingSqaure(board.ColorToMove);
+            var kingSquare = board.GetKingSquare(board.ColorToMove);
             if (kingSquare == -1)
             {
                 Moves = legalMoves;
@@ -71,7 +68,7 @@ namespace chess_engine.Helpers
             {
                 board.MakeMove(moveToVerify);
 
-                kingSquare = board.GetKingSqaure(orgColorToMove);
+                kingSquare = board.GetKingSquare(orgColorToMove);
                 if (kingSquare == -1)
                     Debug.WriteLine($"FEN: {board.GetFEN()}");
 
@@ -147,9 +144,8 @@ namespace chess_engine.Helpers
                 if (Moves[i].From == square)
                     result.Add(Moves[i].To);
             }
-#pragma warning disable IDE0305 // Simplify collection initialization
+
             return result.ToArray();
-#pragma warning restore IDE0305 // Simplify collection initialization
         }
 
         public static Move? GetMove(int from, int to)

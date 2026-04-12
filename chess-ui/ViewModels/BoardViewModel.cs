@@ -18,7 +18,6 @@ namespace chess_ui.ViewModels
         //private const string StartPosition = "8/8/8/2k5/4K3/8/8/8 w KQkq - 0 1";
         private Board _board;
         private Move? _pendingPromotionMove;
-        private readonly int _botColor = Piece.Black;
 
         public string[] Ranks { get; } // rows        
         public string[] Files { get; } // columns
@@ -54,8 +53,14 @@ namespace chess_ui.ViewModels
         private ObservableCollection<SquareViewModel> _squares;
 
         [ObservableProperty]
-        [NotifyCanExecuteChangedFor(nameof(UndoMoveCommand))]
         private int _fullMoveNumber;
+
+        [ObservableProperty]
+        private int _halfMoveClock;
+
+        [ObservableProperty]
+        [NotifyCanExecuteChangedFor(nameof(UndoMoveCommand))]
+        private int _gameStatesCount;
 
         [ObservableProperty]
         private int _castlingRights;
@@ -69,6 +74,12 @@ namespace chess_ui.ViewModels
         [ObservableProperty]
         private string _gameOverMessage = string.Empty;
 
+        [ObservableProperty]
+        private bool _isBlackBot = true;
+
+        [ObservableProperty]
+        private bool _isWhiteBot;
+
         #endregion
 
         #region Commands
@@ -80,6 +91,9 @@ namespace chess_ui.ViewModels
             GameStatus = GameStatus.Playing;
             CastlingRights = _board.CastlingRights;
             EnPassantSquare = _board.EnPassantSquare;
+            FullMoveNumber = _board.FullMoveNumber;
+            HalfMoveClock = _board.HalfMoveClock;
+            GameStatesCount = _board.GameStates.Count;
 
             foreach (var sq in Squares)
             {
@@ -90,6 +104,7 @@ namespace chess_ui.ViewModels
             }
 
             SyncFromBoard();
+            MakeBotMoveIfNeeded();
         }
 
         [RelayCommand(CanExecute = nameof(CanUndoMove))]
@@ -98,7 +113,9 @@ namespace chess_ui.ViewModels
             _board.UnmakeLastMove();
             MoveGenerator.GenerateLegalMoves(_board);
             SyncFromBoard();
-            FullMoveNumber = _board.GameStates.Count;
+            GameStatesCount = _board.GameStates.Count;
+            FullMoveNumber = _board.FullMoveNumber;
+            HalfMoveClock = _board.HalfMoveClock;
             CastlingRights = _board.CastlingRights;
             EnPassantSquare = _board.EnPassantSquare;
 
@@ -107,6 +124,8 @@ namespace chess_ui.ViewModels
                 sq.IsHighlighted = false;
                 sq.IsValidMoveTarget = false;
             }
+
+            MakeBotMoveIfNeeded();
         }
 
         [RelayCommand]
@@ -200,41 +219,66 @@ namespace chess_ui.ViewModels
             //var fenAft = _board.GetFEN();
             //Debug.Assert(fenAft.Equals(fenBef, StringComparison.CurrentCulture), $"FENs are diff | Before: {fenBef} | After: {fenAft}");
             SyncFromBoard();
-            FullMoveNumber = _board.GameStates.Count;
+            GameStatesCount = _board.GameStates.Count;
+            FullMoveNumber = _board.FullMoveNumber;
+            HalfMoveClock = _board.HalfMoveClock;
             CastlingRights = _board.CastlingRights;
             EnPassantSquare = _board.EnPassantSquare;
+
+            if (HalfMoveClock >= 50)
+            {
+                SetGameOver();
+                return;
+            }
 
             MakeBotMoveIfNeeded();
         }
 
         private void MakeBotMoveIfNeeded()
         {
-            if (_board.ColorToMove != _botColor)
+            bool isCurrentColorBot = (_board.ColorToMove == Piece.White && IsWhiteBot)
+                           || (_board.ColorToMove == Piece.Black && IsBlackBot);
+
+            if (!isCurrentColorBot)
                 return;
 
-            var move = RandomBot.PickMove();
+            if (GameStatus != GameStatus.Playing)
+                return;
 
-            if (move is null)
+            Avalonia.Threading.Dispatcher.UIThread.Post(() =>
             {
-                // No legal moves — checkmate or stalemate
-                Debug.WriteLine("Game over: no legal moves for bot.");
-                SetGameOver();
-                return;
-            }
+                var move = RandomBot.PickMove();
 
-            CompleteMove(move.Value);
+                if (move is null)
+                {
+                    // No legal moves — checkmate or stalemate
+                    Debug.WriteLine("Game over: no legal moves for bot.");
+                    SetGameOver();
+                    return;
+                }
+
+                CompleteMove(move.Value);
+
+            }, Avalonia.Threading.DispatcherPriority.Background);
         }
 
         private void SetGameOver()
         {
-            bool isHumarnTurn = _board.ColorToMove != _botColor;
+            bool isHumarnTurn = (IsBlackBot && IsWhiteBot) ? false : true;
             string side = isHumarnTurn ? "You have" : "Bot has";
 
             GameStatus = GameStatus.Stalemate;
             GameOverMessage = $"Stalemate — {side} no legal moves.";
 
-            // Swap to Checkmate once you can detect check:
-            // if (IsInCheck(_board)) { GameState = GameState.Checkmate; ... }
+            if (HalfMoveClock >= 50)
+            {
+                GameOverMessage = "Fifty-Move rule brocken";
+            }
+            else if (_board.IsInCheck())
+            {
+                GameStatus = GameStatus.Checkmate;
+                GameOverMessage = $"Checkmate - {side} no legal moves";
+            }
         }
 
         private void SyncFromBoard()

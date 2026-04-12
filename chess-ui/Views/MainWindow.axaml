@@ -34,7 +34,7 @@
         <vm:BoardViewModel />
     </Design.DataContext>
     <DockPanel>
-        <Menu Background="#2b2b2b" DockPanel.Dock="Top">
+        <Menu DockPanel.Dock="Top">
             <MenuItem Header="Game">
                 <MenuItem Command="{Binding NewGameCommand}" Header="_New Game" />
                 <Separator />
@@ -80,17 +80,33 @@
                         Header="9" />
                 </MenuItem>
             </MenuItem>
+            <MenuItem Header="Bots">
+                <MenuItem
+                    Header="Is black a bot"
+                    IsChecked="{Binding IsBlackBot, Mode=TwoWay}"
+                    ToggleType="CheckBox" />
+                <MenuItem
+                    Header="Is white a bot"
+                    IsChecked="{Binding IsWhiteBot, Mode=TwoWay}"
+                    ToggleType="CheckBox" />
+            </MenuItem>
         </Menu>
 
         <WrapPanel
             Margin="4"
             DockPanel.Dock="Bottom"
             Orientation="Horizontal">
-            <TextBlock Foreground="Black" Text="Castling Rights: " />
-            <TextBlock Foreground="Black" Text="{Binding CastlingRights, Converter={StaticResource CastlingRightsConverter}}" />
-            <Separator />
-            <TextBlock Foreground="Black" Text="EnPassant Square: " />
-            <TextBlock Foreground="Black" Text="{Binding EnPassantSquare}" />
+            <TextBlock Text="Castling Rights: " />
+            <TextBlock Text="{Binding CastlingRights, Converter={StaticResource CastlingRightsConverter}}" />
+            <TextBlock Text=" | " />
+            <TextBlock Text="EnPassant Square: " />
+            <TextBlock Text="{Binding EnPassantSquare}" />
+            <TextBlock Text=" | " />
+            <TextBlock Text="Full Moves: " />
+            <TextBlock Text="{Binding FullMoveNumber}" />
+            <TextBlock Text=" | " />
+            <TextBlock Text="HM Clock: " />
+            <TextBlock Text="{Binding HalfMoveClock}" />
         </WrapPanel>
 
         <Panel>
