@@ -16,7 +16,9 @@ namespace chess_engine.Helpers
             { 6, 119060324 },
             { 7, 3195901860 },
             { 8, 84998978956 },
-            { 9, 2439530234167 }
+            { 9, 2439530234167 },
+            { 10, 69352859712417 },
+            { 11, 2097651003696806}
         };
 
         public static void Divide(Board board, int depth)

@@ -16,7 +16,7 @@ namespace chess_ui.ViewModels
         private const byte BoardSize = 8;
         private const string StartPosition = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
         //private const string StartPosition = "8/8/8/2k5/4K3/8/8/8 w KQkq - 0 1";
-        private readonly Board _board;
+        private Board _board;
         private Move? _pendingPromotionMove;
         private readonly int _botColor = Piece.Black;
 
@@ -32,7 +32,6 @@ namespace chess_ui.ViewModels
             Ranks = ["8", "7", "6", "5", "4", "3", "2", "1"];
             Files = ["a", "b", "c", "d", "e", "f", "g", "h"];
 
-            // Init squares
             var sq = new SquareViewModel[BoardSize * BoardSize];
             var i = 0;
             for (int r = 0; r < BoardSize; r++)
@@ -43,13 +42,13 @@ namespace chess_ui.ViewModels
                     i++;
                 }
             }
-            _squares = new ObservableCollection<SquareViewModel>(sq);
+            Squares = new ObservableCollection<SquareViewModel>(sq);
+            _board = new Board();
 
-            _board = Board.FromStartPosition(StartPosition);
-            CastlingRights = _board.CastlingRights;
-            EnPassantSquare = _board.EnPassantSquare;
-            SyncFromBoard();
+            NewGame();
         }
+
+        #region Observable Properties
 
         [ObservableProperty]
         private ObservableCollection<SquareViewModel> _squares;
@@ -63,6 +62,35 @@ namespace chess_ui.ViewModels
 
         [ObservableProperty]
         private int _enPassantSquare;
+
+        [ObservableProperty]
+        private GameStatus _gameStatus = GameStatus.Playing;
+
+        [ObservableProperty]
+        private string _gameOverMessage = string.Empty;
+
+        #endregion
+
+        #region Commands
+
+        [RelayCommand]
+        private void NewGame()
+        {
+            _board = Board.FromStartPosition(StartPosition);
+            GameStatus = GameStatus.Playing;
+            CastlingRights = _board.CastlingRights;
+            EnPassantSquare = _board.EnPassantSquare;
+
+            foreach (var sq in Squares)
+            {
+                sq.IsHighlighted = false;
+                sq.IsValidMoveTarget = false;
+                sq.IsSelected = false;
+                sq.IsGhost = false;
+            }
+
+            SyncFromBoard();
+        }
 
         [RelayCommand(CanExecute = nameof(CanUndoMove))]
         private void UndoMove()
@@ -88,6 +116,9 @@ namespace chess_ui.ViewModels
                 Perft.Divide(_board, depth);
         }
 
+        #endregion
+
+        #region Public Methods
 
         public void SelectSquare(int index)
         {
@@ -141,8 +172,10 @@ namespace chess_ui.ViewModels
             PromotionCompleted?.Invoke();
         }
 
+        #endregion
 
-        // -- Private Methods -----------------------------------
+        #region Private Methods
+
         private bool CanUndoMove() => _board.GameStates.Count > 0;
 
         private void CompleteMove(Move move)
@@ -185,10 +218,23 @@ namespace chess_ui.ViewModels
             {
                 // No legal moves — checkmate or stalemate
                 Debug.WriteLine("Game over: no legal moves for bot.");
+                SetGameOver();
                 return;
             }
 
             CompleteMove(move.Value);
+        }
+
+        private void SetGameOver()
+        {
+            bool isHumarnTurn = _board.ColorToMove != _botColor;
+            string side = isHumarnTurn ? "You have" : "Bot has";
+
+            GameStatus = GameStatus.Stalemate;
+            GameOverMessage = $"Stalemate — {side} no legal moves.";
+
+            // Swap to Checkmate once you can detect check:
+            // if (IsInCheck(_board)) { GameState = GameState.Checkmate; ... }
         }
 
         private void SyncFromBoard()
@@ -205,5 +251,7 @@ namespace chess_ui.ViewModels
                 }
             }
         }
+
+        #endregion
     }
 }

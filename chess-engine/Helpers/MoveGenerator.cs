@@ -25,6 +25,9 @@ namespace chess_engine.Helpers
 
         public static void PrecomputedMoveData()
         {
+            if (NumSquaresToEdge.Length > 0)
+                return;
+
             for (int rank = 0; rank < 8; rank++)
             {
                 for (int file = 0; file < 8; file++)
@@ -52,12 +55,6 @@ namespace chess_engine.Helpers
 
         public static void GenerateLegalMoves(Board board)
         {
-            if (board.Checkmate)
-            {
-                Moves = [];
-                return;
-            }
-
             List<Move> pseudoLegalMoves = GenerateMoves(board);
             List<Move> legalMoves = [];
 
@@ -73,12 +70,6 @@ namespace chess_engine.Helpers
             foreach (var moveToVerify in pseudoLegalMoves)
             {
                 board.MakeMove(moveToVerify);
-                if (board.Checkmate)
-                {
-                    board.UnmakeLastMove();
-                    Debug.WriteLine($"Checkmate FEN: {board.GetFEN()}");
-                    continue;
-                }
 
                 kingSquare = board.GetKingSqaure(orgColorToMove);
                 if (kingSquare == -1)

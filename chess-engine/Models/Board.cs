@@ -30,8 +30,6 @@ namespace chess_engine.Models
 
         public readonly Stack<GameState> GameStates;
 
-        public bool Checkmate;
-
         public Board()
         {
             Squares = new int[64];
@@ -92,12 +90,6 @@ namespace chess_engine.Models
 
         public void MakeMove(Move move, bool uiMove = false)
         {
-            if (Piece.TypeOf(Squares[move.To]) == Piece.King)
-            {
-                Checkmate = true;
-                Debug.WriteLine($"Checkmate for {(ColorToMove == Piece.White ? "White" : "Black")}");
-            }
-
             var gs = new GameState
             {
                 EnPassantSquare = EnPassantSquare,
@@ -185,7 +177,6 @@ namespace chess_engine.Models
 
         public void UnmakeMove(Move move, GameState gameState)
         {
-            Checkmate = false;
             EnPassantSquare = gameState.EnPassantSquare;
             CastlingRights = gameState.CastlingRights;
             Squares[move.From] = Squares[move.To];
