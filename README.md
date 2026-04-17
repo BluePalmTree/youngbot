@@ -14,6 +14,10 @@
 | Patt        | Stalemate |
 | Rochade     | Castling  |
 
+### Design decisions
+
+Major architectural decisions are recorded in [`docs/design/`](docs/design/).
+
 ### Tools
 
 Svg.Skia: https://wieslawsoltes.github.io/Svg.Skia/articles/packages/svg-controls-skia-avalonia/

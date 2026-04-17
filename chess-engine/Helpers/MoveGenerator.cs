@@ -5,11 +5,9 @@ namespace chess_engine.Helpers
 {
     public static class MoveGenerator
     {
-        //private static readonly bool d = true; // debugging
-
-        /// <summary>
-        /// N, S, W, E, NW, SW, NE, SE
-        /// </summary>
+        // Direction ordering (shared with AttackData): indices 0..7 map to
+        //   N(+8), S(-8), W(-1), E(+1), NW(+7), SE(-7), NE(+9), SW(-9)
+        // Orthogonal directions are indices 0..3; diagonals are 4..7.
         public static readonly int[] DirectionOffsets = [8, -8, -1, 1, 7, -7, 9, -9];
         public static readonly int[][] NumSquaresToEdge = new int[64][];
 
@@ -50,8 +48,127 @@ namespace chess_engine.Helpers
             }
         }
 
+        // Fast legal move generation:
+        //   1. Precompute opponent attack map, checkers, check-block mask, pin lines.
+        //   2. Generate pseudo-legal moves.
+        //   3. Filter each move inline against those structures — no make/unmake.
         public static void GenerateLegalMoves(Board board)
         {
+            var data = AttackData.Compute(board, board.ColorToMove);
+            board.AttackData = data;
+            board.AttackedSquares = [.. data.AttackMap];
+
+            int ownKing = board.GetKingSquare(board.ColorToMove);
+
+            var legalMoves = new List<Move>();
+            var pseudoLegal = GenerateMoves(board);
+
+            foreach (var move in pseudoLegal)
+            {
+                if (IsLegal(board, data, move, ownKing))
+                    legalMoves.Add(move);
+            }
+
+            if (legalMoves.Count == 0)
+                Debug.WriteLine($"No legal moves for {Piece.GetColorText(board.ColorToMove)} left.");
+
+            Moves = legalMoves;
+        }
+
+        private static bool IsLegal(Board board, AttackData data, Move move, int ownKing)
+        {
+            bool isKingMove = move.From == ownKing;
+
+            if (isKingMove)
+                return IsLegalKingMove(data, move);
+
+            // Only king moves can escape a double check.
+            if (data.InDoubleCheck) return false;
+
+            // Under single check: non-king move must land on a blocking or capturing square.
+            if (data.CheckBlockMask != null && !data.CheckBlockMask.Contains(move.To))
+                return false;
+
+            // Pinned piece: target must lie on the pin line.
+            if (data.PinLines.TryGetValue(move.From, out var pinLine) && !pinLine.Contains(move.To))
+                return false;
+
+            // En-passant horizontal-discovered-pin: removing BOTH pawns from the 5th/4th rank
+            // can uncover a rook/queen attack along the rank. Handled without make/unmake.
+            if (move.Flag == MoveFlag.EnPassant && LeavesKingInCheckViaEpPin(board, move, ownKing))
+                return false;
+
+            return true;
+        }
+
+        private static bool IsLegalKingMove(AttackData data, Move move)
+        {
+            // A king move that lands on an attacked square is suicide.
+            if (data.AttackMap.Contains(move.To)) return false;
+
+            if (move.Flag == MoveFlag.KingSideCastle || move.Flag == MoveFlag.QueenSideCastle)
+            {
+                // Castling is illegal while in check.
+                if (data.InCheck) return false;
+
+                // The square the king *passes through* must not be attacked either.
+                // (Starting square is already guaranteed not-attacked by InCheck=false;
+                //  landing square was checked above.)
+                int step = move.Flag == MoveFlag.KingSideCastle ? +1 : -1;
+                int through = move.From + step;
+                if (data.AttackMap.Contains(through)) return false;
+            }
+
+            return true;
+        }
+
+        private static bool LeavesKingInCheckViaEpPin(Board board, Move move, int kingSq)
+        {
+            // The capturing pawn leaves from move.From; the captured pawn sits on the same
+            // rank as move.From (one square ahead of the EP target along the capturer's column).
+            bool whiteMoving = Piece.IsColor(board.Squares[move.From], Piece.White);
+            int capturedPawnSq = whiteMoving ? move.To - 8 : move.To + 8;
+
+            int kingRank = Board.RankOf(kingSq);
+            if (Board.RankOf(move.From) != kingRank) return false;
+
+            int opponent = whiteMoving ? Piece.Black : Piece.White;
+
+            // Scan the king's rank in both directions; with both pawns conceptually removed,
+            // does the first piece we see on the rank turn out to be an enemy rook or queen?
+            foreach (int dir in new[] { -1, +1 })
+            {
+                int sq = kingSq;
+                while (true)
+                {
+                    int file = sq % 8;
+                    if (dir == -1 && file == 0) break;
+                    if (dir == +1 && file == 7) break;
+                    sq += dir;
+
+                    if (sq == move.From || sq == capturedPawnSq) continue;
+
+                    int piece = board.Squares[sq];
+                    if (piece == Piece.None) continue;
+
+                    if (Piece.IsColor(piece, opponent))
+                    {
+                        int type = Piece.TypeOf(piece);
+                        if (type == Piece.Rook || type == Piece.Queen) return true;
+                    }
+                    break;
+                }
+            }
+            return false;
+        }
+
+        // Slow reference legal-move generator. Kept as an A/B oracle against the fast
+        // path — perft disagreements are easiest to narrow down by replaying against this.
+        public static void GenerateLegalMovesOracle(Board board)
+        {
+            Stopwatch sw = new();
+            sw.Start();
+
             List<Move> pseudoLegalMoves = GenerateMoves(board);
             List<Move> legalMoves = [];
 
@@ -76,17 +193,11 @@ namespace chess_engine.Helpers
 
                 if (!opponentResponses.Any(r => r.To == kingSquare))
                     legalMoves.Add(moveToVerify);
-                //else
-                // {
-                //Debug.WriteLine($"Move {moveToVerify} has responses that leave the king ({kingSquare}) in check:");
-                //     var rs = opponentResponses.Where(r => r.To == kingSquare).ToArray();
-                //     foreach (var r in rs)
-                //         Console.WriteLine($"  {r}");
-                // }
 
                 board.UnmakeLastMove();
-                //board.AssertIntegrity();
             }
+
+            sw.Stop();
 
             if (legalMoves.Count == 0)
                 Debug.WriteLine($"No legal moves for {(board.ColorToMove == Piece.White ? "White" : "Black")} left. Checkmate!");
@@ -132,7 +243,6 @@ namespace chess_engine.Helpers
                 }
             }
 
-            //Debug.WriteLineIf(d, string.Join(Environment.NewLine, moves));
             return moves;
         }
 
@@ -174,7 +284,7 @@ namespace chess_engine.Helpers
                 int targetSquare = startSquare + DirectionOffsets[directionIndex];
                 int pieceOnTargetSquare = board.Squares[targetSquare];
 
-                // Blockes by friendly piece, so can't move any further in this direction
+                // Blocked by friendly piece, so can't move any further in this direction
                 if (Piece.IsColor(pieceOnTargetSquare, board.ColorToMove))
                     continue;
 
@@ -321,7 +431,7 @@ namespace chess_engine.Helpers
                         if (pieceOnTargetSquare == Piece.None)
                         {
                             var mf = n == 2 ? MoveFlag.DoublePawnPush : MoveFlag.Normal;
-                            moves.Add(new Move(startSquare, targetSquare, mf, Prom(targetSquare)));
+                            AddPawnMove(moves, startSquare, targetSquare, mf);
                         }
                         else
                         {
@@ -335,7 +445,9 @@ namespace chess_engine.Helpers
                     int pieceOnTargetSquare = board.Squares[targetSquare];
 
                     if (pieceOnTargetSquare == Piece.None)
-                        moves.Add(new Move(startSquare, targetSquare, MoveFlag.Normal, Prom(targetSquare)));
+                    {
+                        AddPawnMove(moves, startSquare, targetSquare, MoveFlag.Normal);
+                    }
                 }
             }
 
@@ -346,10 +458,14 @@ namespace chess_engine.Helpers
                 int pieceOnTargetSquare = board.Squares[targetSquare];
 
                 if (targetSquare == board.EnPassantSquare)
-                    moves.Add(new Move(startSquare, targetSquare, MoveFlag.EnPassant, Prom(targetSquare)));
+                {
+                    moves.Add(new Move(startSquare, targetSquare, MoveFlag.EnPassant));
+                }
 
                 if (pieceOnTargetSquare != Piece.None && !Piece.IsColor(pieceOnTargetSquare, board.ColorToMove))
-                    moves.Add(new Move(startSquare, targetSquare, MoveFlag.Normal, Prom(targetSquare)));
+                {
+                    AddPawnMove(moves, startSquare, targetSquare, MoveFlag.Normal);
+                }
             }
 
             var northEast = NumSquaresToEdge[startSquare][NorthEastIndex + whiteIndex];
@@ -359,16 +475,38 @@ namespace chess_engine.Helpers
                 int pieceOnTargetSquare = board.Squares[targetSquare];
 
                 if (targetSquare == board.EnPassantSquare)
-                    moves.Add(new Move(startSquare, targetSquare, MoveFlag.EnPassant, Prom(targetSquare)));
+                {
+                    moves.Add(new Move(startSquare, targetSquare, MoveFlag.EnPassant));
+                }
 
                 if (pieceOnTargetSquare != Piece.None && !Piece.IsColor(pieceOnTargetSquare, board.ColorToMove))
-                    moves.Add(new Move(startSquare, targetSquare, MoveFlag.Normal, Prom(targetSquare)));
+                {
+                    AddPawnMove(moves, startSquare, targetSquare, MoveFlag.Normal);
+                }
             }
 
             return moves;
         }
 
-        // if true pawn needs to promote
+        // Emit a pawn move, expanding into the four concrete promotion variants when the
+        // target lands on the back rank. Perft / Make-Move both need concrete Promote*
+        // flags to count and apply promotions correctly.
+        private static void AddPawnMove(List<Move> moves, int from, int to, MoveFlag baseFlag)
+        {
+            if (Prom(to))
+            {
+                moves.Add(new Move(from, to, MoveFlag.PromoteQueen));
+                moves.Add(new Move(from, to, MoveFlag.PromoteRook));
+                moves.Add(new Move(from, to, MoveFlag.PromoteBishop));
+                moves.Add(new Move(from, to, MoveFlag.PromoteKnight));
+            }
+            else
+            {
+                moves.Add(new Move(from, to, baseFlag));
+            }
+        }
+
+        // True when the pawn reaches the back rank and the move needs to promote.
         private static bool Prom(int targetSquare) => Board.RankOf(targetSquare) is 0 or 7;
     }
 }

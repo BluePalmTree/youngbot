@@ -14,8 +14,7 @@ namespace chess_ui.ViewModels
     public partial class BoardViewModel : ViewModelBase
     {
         private const byte BoardSize = 8;
-        private const string StartPosition = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
-        //private const string StartPosition = "8/8/8/2k5/4K3/8/8/8 w KQkq - 0 1";
+        private const string StartPosition = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"; // default        
         private Board _board;
         private Move? _pendingPromotionMove;
 
@@ -43,6 +42,7 @@ namespace chess_ui.ViewModels
             }
             Squares = new ObservableCollection<SquareViewModel>(sq);
             _board = new Board();
+            AttackedSquares = [];
 
             NewGame();
         }
@@ -80,6 +80,12 @@ namespace chess_ui.ViewModels
         [ObservableProperty]
         private bool _isWhiteBot;
 
+        [ObservableProperty]
+        private ObservableCollection<int> _attackedSquares;
+
+        [ObservableProperty]
+        private bool _highlightAttackedSquares = true;
+
         #endregion
 
         #region Commands
@@ -94,6 +100,7 @@ namespace chess_ui.ViewModels
             FullMoveNumber = _board.FullMoveNumber;
             HalfMoveClock = _board.HalfMoveClock;
             GameStatesCount = _board.GameStates.Count;
+            AttackedSquares = new ObservableCollection<int>(_board.AttackedSquares);
 
             foreach (var sq in Squares)
             {
@@ -118,6 +125,7 @@ namespace chess_ui.ViewModels
             HalfMoveClock = _board.HalfMoveClock;
             CastlingRights = _board.CastlingRights;
             EnPassantSquare = _board.EnPassantSquare;
+            AttackedSquares = new ObservableCollection<int>(_board.AttackedSquares);
 
             foreach (var sq in Squares)
             {
@@ -131,8 +139,25 @@ namespace chess_ui.ViewModels
         [RelayCommand]
         private void RunPerft(object? parameter)
         {
-            if (parameter is not null && int.TryParse(parameter.ToString(), out int depth))
-                Perft.Divide(_board, depth);
+            if (parameter is not string s)
+                return;
+
+            var parts = s.Split(' ');
+            if (parts.Length != 2)
+                return;
+
+            if (!int.TryParse(parts[1], out int depth))
+                return;
+
+            string fen = parts[0] switch
+            {
+                "start" => "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",
+                "kiwipete" => "r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - 0 1",
+                "position3" => "8/2p5/3p4/KP5r/1R3p1k/8/4P1P1/8 w - - 0 1",
+                _ => StartPosition,
+            };
+
+            Perft.Divide(parts[0], fen, depth);
         }
 
         #endregion
@@ -214,16 +239,14 @@ namespace chess_ui.ViewModels
             to.IsHighlighted = true;
 
             _board.MakeMove(move, true);
-            //var fenBef = _board.GetFEN();
             MoveGenerator.GenerateLegalMoves(_board);
-            //var fenAft = _board.GetFEN();
-            //Debug.Assert(fenAft.Equals(fenBef, StringComparison.CurrentCulture), $"FENs are diff | Before: {fenBef} | After: {fenAft}");
             SyncFromBoard();
             GameStatesCount = _board.GameStates.Count;
             FullMoveNumber = _board.FullMoveNumber;
             HalfMoveClock = _board.HalfMoveClock;
             CastlingRights = _board.CastlingRights;
             EnPassantSquare = _board.EnPassantSquare;
+            AttackedSquares = new ObservableCollection<int>(_board.AttackedSquares);
 
             if (HalfMoveClock >= 50)
             {

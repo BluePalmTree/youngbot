@@ -9,14 +9,10 @@ namespace chess_engine.Models
         // Mailbox: index = rank*8 + file, 0=a1, 63=h8
         public readonly int[] Squares;
 
-        /// <summary>
-        /// Castling rights packed as 4 bits: KQkq
-        /// </summary>
+        // Castling rights packed as 4 bits: KQkq
         public int CastlingRights;
 
-        /// <summary>
-        /// En passant target square (-1 = none)
-        /// </summary>
+        // En passant target square (-1 = none)        
         public int EnPassantSquare;
 
         // Side to move
@@ -30,6 +26,16 @@ namespace chess_engine.Models
 
         public readonly Stack<GameState> GameStates;
 
+        // UI-facing mirror of AttackData.AttackMap (list form for ObservableCollection binding).
+        // Populated by MoveGenerator.GenerateLegalMoves; invalidated on Make/Unmake.
+        public List<int> AttackedSquares;
+
+        // Cached opponent-perspective attack data for the current side to move.
+        // Nullable on purpose — set to null at the top of MakeMove / UnmakeMove so
+        // any consumer that reads stale data gets a loud NullReferenceException
+        // instead of silently wrong legality.
+        public AttackData? AttackData;
+
         public Board()
         {
             Squares = new int[64];
@@ -39,6 +45,7 @@ namespace chess_engine.Models
             HalfMoveClock = 0;
             FullMoveNumber = 0;
             GameStates = [];
+            AttackedSquares = [];
         }
 
         public static Board FromStartPosition(string fen)
@@ -63,7 +70,8 @@ namespace chess_engine.Models
 
             var board = new Board();
             int curIndex = 0;
-            string fenBoard = fen.Split(' ')[0];
+            string[] tokens = fen.Split(' ');
+            string fenBoard = tokens[0];
 
             foreach (char symbol in fenBoard)
             {
@@ -82,6 +90,40 @@ namespace chess_engine.Models
                 }
             }
 
+            // Side to move
+            if (tokens.Length > 1)
+                board.ColorToMove = tokens[1] == "b" ? Piece.Black : Piece.White;
+
+            // Castling rights (KQkq); "-" means none
+            if (tokens.Length > 2)
+            {
+                int cr = 0;
+                if (tokens[2] != "-")
+                {
+                    if (tokens[2].Contains('K')) cr |= 0b1000;
+                    if (tokens[2].Contains('Q')) cr |= 0b0100;
+                    if (tokens[2].Contains('k')) cr |= 0b0010;
+                    if (tokens[2].Contains('q')) cr |= 0b0001;
+                }
+                board.CastlingRights = cr;
+            }
+
+            // En-passant target square (algebraic like "e3"), "-" means none
+            if (tokens.Length > 3 && tokens[3] != "-")
+            {
+                int file = tokens[3][0] - 'a';
+                int rank = tokens[3][1] - '1';
+                board.EnPassantSquare = IndexOf(file, rank);
+            }
+
+            // Half-move clock (50-move rule)
+            if (tokens.Length > 4 && int.TryParse(tokens[4], out int hmc))
+                board.HalfMoveClock = hmc;
+
+            // Full-move number
+            if (tokens.Length > 5 && int.TryParse(tokens[5], out int fmn))
+                board.FullMoveNumber = fmn;
+
             MoveGenerator.PrecomputedMoveData();
             MoveGenerator.GenerateLegalMoves(board);
 
@@ -90,6 +132,9 @@ namespace chess_engine.Models
 
         public void MakeMove(Move move, bool uiMove = false)
         {
+            AttackData = null;
+            AttackedSquares.Clear();
+
             var gs = new GameState
             {
                 EnPassantSquare = EnPassantSquare,
@@ -137,6 +182,20 @@ namespace chess_engine.Models
                 }
             }
 
+            // A capture on a rook's home square revokes that side's castling right,
+            // regardless of who moves. Missed case before: capturing an enemy rook
+            // leaves the castling bit set but the rook gone.
+            if (CastlingRights > 0 && gs.CapturedPiece != Piece.None)
+            {
+                switch (move.To)
+                {
+                    case 0: CastlingRights &= 0b1011; break;   // a1 → white queenside
+                    case 7: CastlingRights &= 0b0111; break;   // h1 → white kingside
+                    case 56: CastlingRights &= 0b1110; break;  // a8 → black queenside
+                    case 63: CastlingRights &= 0b1101; break;  // h8 → black kingside
+                }
+            }
+
             if (move.Flag == MoveFlag.DoublePawnPush)
                 EnPassantSquare = whiteMoved ? move.To - 8 : move.To + 8;
 
@@ -172,6 +231,7 @@ namespace chess_engine.Models
             }
 
             ColorToMove = ColorToMove == Piece.White ? Piece.Black : Piece.White;
+
             if (!whiteMoved)
                 FullMoveNumber++;
 
@@ -189,6 +249,9 @@ namespace chess_engine.Models
 
         public void UnmakeMove(Move move, GameState gameState)
         {
+            AttackData = null;
+            AttackedSquares.Clear();
+
             EnPassantSquare = gameState.EnPassantSquare;
             CastlingRights = gameState.CastlingRights;
             Squares[move.From] = Squares[move.To];
@@ -247,6 +310,13 @@ namespace chess_engine.Models
             var file = FileOf(uiIndex);
             return IndexOf(file, rank);
         }
+        public static string ToRankAndFile(int engineIndex)
+        {
+            var rank = RankOf(engineIndex) + 1;
+            var file = FileOf(engineIndex);
+            return $"{(char)('a' + file)}{rank}";
+        }
+
 
         public int GetKingSquare(int color)
         {
@@ -267,12 +337,9 @@ namespace chess_engine.Models
             int kingSquare = GetKingSquare(ColorToMove);
             if (kingSquare == -1) return false;
 
-            // Temporarily flip the turn so GenerateMoves produces opponent moves
-            ColorToMove = ColorToMove == Piece.White ? Piece.Black : Piece.White;
-            var opponentMoves = MoveGenerator.GenerateMoves(this);
-            ColorToMove = ColorToMove == Piece.White ? Piece.Black : Piece.White;
-
-            return opponentMoves.Any(m => m.To == kingSquare);
+            // Fast path: cached AttackData is valid for the current side to move.
+            var data = AttackData ?? Helpers.AttackData.Compute(this, ColorToMove);
+            return data.AttackMap.Contains(kingSquare);
         }
 
         public string GetFEN()
