@@ -72,7 +72,7 @@ The lesson shared between these two: moves that *reach an empty square but still
 - The UI's "attacked squares" overlay now semantically means "opponent threats" — matches user intuition.
 - Castling-through-check gets fixed as a natural side effect.
 - Clean target for the next optimization pass (bitboards) — the seam between `AttackData` and the generator stays the same.
-- The perft harness at `chess-perft/` is now the regression test for legal-move correctness. `dotnet run --project chess-perft` with no args runs the default suite; add an `oracle:` prefix to any position to compare against the slow reference generator.
+- The perft harness at `chess-perft/` is now the regression test for legal-move correctness. `dotnet run --project chess-perft` with no args runs the default suite; add an `oracle:` prefix to any position to compare against the slow reference generator. Pass `--record` to append a timing row per case to `chess-perft/benchmarks.md` — that file is the long-term history of move-generation performance and is meant to be committed.
 
 **Still open:**
 - **Bitboards.** The obvious next win. Converting `AttackMap` to `ulong` and generating slider attacks via magic bitboards is a separate, larger change.

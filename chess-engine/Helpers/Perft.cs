@@ -40,11 +40,19 @@ namespace chess_engine.Helpers
             },
         };
 
-        public static void Divide(string positionKey, string fen, int depth, bool useOracle = false)
+        // Returned by Divide so callers that want to record timings (the CLI's --record
+        // mode) don't have to re-parse the stdout summary line.
+        public readonly record struct PerftResult(long Nodes, TimeSpan Elapsed, long Expected, bool Match);
+
+        public static PerftResult Divide(string positionKey, string fen, int depth, bool useOracle = false)
         {
             var board = Board.FromStartPosition(fen);
 
             Action<Board> gen = useOracle ? MoveGenerator.GenerateLegalMovesOracle : MoveGenerator.GenerateLegalMoves;
+
+            // positionKey is the lookup key ("start", "kiwipete", "position3", "custom").
+            // Display label prepends "ORACLE" in oracle mode so the output line makes that visible.
+            string label = useOracle ? $"ORACLE {positionKey}" : positionKey;
 
             gen(board);
             var moves = new List<Move>(MoveGenerator.Moves);
@@ -77,11 +85,13 @@ namespace chess_engine.Helpers
                           : total == expected ? "OK" : $"MISMATCH (expected {expected:N0}, diff {total - expected:+#;-#;0})";
 
             Debug.WriteLine("--------------------------------------");
-            Debug.WriteLine($"Perft {positionKey} depth {depth}: {total:N0} in {totalElapsed} — {status}");
+            Debug.WriteLine($"Perft {label} depth {depth}: {total:N0} in {totalElapsed} — {status}");
 
             // Mirror the summary to stdout so headless callers (CLI perft harness, piped runs)
             // don't need a debugger attached to see results. Per-move lines stay on Debug.
-            Console.WriteLine($"Perft {positionKey} depth {depth}: {total:N0} in {totalElapsed} — {status}");
+            Console.WriteLine($"Perft {label} depth {depth}: {total:N0} in {totalElapsed} — {status}");
+
+            return new PerftResult(total, totalTime, expected, expected != -1 && total == expected);
         }
 
         private static string Promo(Move m) => m.Flag switch

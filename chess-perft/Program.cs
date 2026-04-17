@@ -1,12 +1,25 @@
+using System.Diagnostics;
+using System.Globalization;
 using chess_engine.Helpers;
 
-// Headless perft runner. Args: either nothing (runs a default suite) or pairs of
-// "<positionKey> <depth>" like: dotnet run --project chess-perft -- start 5 kiwipete 3
+// Headless perft runner.
 //
-// Prefix a positionKey with "oracle:" to run against the slow reference generator
-// (GenerateLegalMovesOracle). Useful for A/B-diffing against the fast path.
+// Usage:
+//   dotnet run --project chess-perft                         # default suite
+//   dotnet run --project chess-perft -- start 5 kiwipete 3   # specific positions
+//   dotnet run --project chess-perft -- --fen "<FEN>" <depth> [--oracle]
+//
+// Flags (can appear anywhere in args):
+//   --oracle   In --fen mode, use the slow reference generator.
+//   --record   Append one row per (position, depth) run to chess-perft/benchmarks.md.
+//
+// Prefix a positionKey with "oracle:" to run that case against the slow reference
+// generator (GenerateLegalMovesOracle). Useful for A/B-diffing against the fast path.
 //
 // positionKey ∈ { start, kiwipete, position3 }
+
+bool record = args.Contains("--record");
+var filteredArgs = args.Where(a => a != "--record").ToArray();
 
 var positions = new Dictionary<string, string>
 {
@@ -15,24 +28,36 @@ var positions = new Dictionary<string, string>
     ["position3"] = "8/2p5/3p4/KP5r/1R3p1k/8/4P1P1/8 w - - 0 1",
 };
 
-// Special mode: --fen "<FEN>" <depth> [--oracle]
-if (args.Length >= 3 && args[0] == "--fen")
+var collected = new List<(string position, int depth, Perft.PerftResult result)>();
+
+// JIT warmup so the first recorded row isn't dominated by cold-start cost.
+// Cheap (<1 ms) but covers the hot paths in MoveGenerator and AttackData.
+if (record)
 {
-    string fen = args[1];
-    int depth = int.Parse(args[2]);
-    bool oracle = args.Length >= 4 && args[3] == "--oracle";
-    Perft.Divide(oracle ? "ORACLE custom" : "custom", fen, depth, oracle);
+    var warmup = chess_engine.Models.Board.FromStartPosition(positions["start"]);
+    Perft.Run(warmup, 2);
+}
+
+// Special mode: --fen "<FEN>" <depth> [--oracle]
+if (filteredArgs.Length >= 3 && filteredArgs[0] == "--fen")
+{
+    string fen = filteredArgs[1];
+    int depth = int.Parse(filteredArgs[2]);
+    bool oracle = filteredArgs.Length >= 4 && filteredArgs[3] == "--oracle";
+    var result = Perft.Divide("custom", fen, depth, oracle);
+    if (record) collected.Add((oracle ? "custom-oracle" : "custom", depth, result));
+    if (record) WriteBenchmarks(collected);
     return;
 }
 
-(string key, int depth)[] suite = args.Length == 0
+(string key, int depth)[] suite = filteredArgs.Length == 0
     ? new[]
     {
         ("start", 1), ("start", 2), ("start", 3), ("start", 4), ("start", 5),
         ("kiwipete", 1), ("kiwipete", 2), ("kiwipete", 3),
         ("position3", 1), ("position3", 2), ("position3", 3), ("position3", 4),
     }
-    : ParsePairs(args);
+    : ParsePairs(filteredArgs);
 
 foreach (var (key, depth) in suite)
 {
@@ -44,8 +69,11 @@ foreach (var (key, depth) in suite)
         Console.Error.WriteLine($"Unknown position '{lookup}'. Known: {string.Join(", ", positions.Keys)}");
         continue;
     }
-    Perft.Divide(oracle ? $"ORACLE {lookup}" : lookup, fen, depth, oracle);
+    var result = Perft.Divide(lookup, fen, depth, oracle);
+    if (record) collected.Add((oracle ? $"{lookup}-oracle" : lookup, depth, result));
 }
+
+if (record) WriteBenchmarks(collected);
 
 static (string, int)[] ParsePairs(string[] args)
 {
@@ -55,4 +83,97 @@ static (string, int)[] ParsePairs(string[] args)
     for (int i = 0; i < args.Length; i += 2)
         list.Add((args[i], int.Parse(args[i + 1])));
     return list.ToArray();
+}
+
+static void WriteBenchmarks(List<(string position, int depth, Perft.PerftResult result)> rows)
+{
+    if (rows.Count == 0) return;
+
+    string path = FindBenchmarksPath();
+    bool fresh = !File.Exists(path);
+
+    string commit = GetCommitSha();
+    string config = GetBuildConfig();
+    string date = DateTime.UtcNow.ToString("yyyy-MM-dd");
+
+    var sb = new System.Text.StringBuilder();
+    if (fresh)
+    {
+        sb.AppendLine("# Perft benchmarks");
+        sb.AppendLine();
+        sb.AppendLine("Each row is one `--record`ed perft run. The commit column carries `-dirty` when the working tree had uncommitted changes.");
+        sb.AppendLine();
+        sb.AppendLine("| date | commit | position | depth | nodes | time (ms) | nodes/sec | config | status |");
+        sb.AppendLine("|---|---|---|---|---|---|---|---|---|");
+    }
+
+    // Force invariant culture so the file is stable across machines/locales —
+    // otherwise a German-locale recorder writes "8.902" for 8,902 and a US-locale
+    // recorder writes "8,902", and merging or diffing gets confusing fast.
+    var inv = CultureInfo.InvariantCulture;
+    foreach (var (position, depth, result) in rows)
+    {
+        double ms = result.Elapsed.TotalMilliseconds;
+        long nps = ms > 0 ? (long)(result.Nodes / (ms / 1000.0)) : 0;
+        string status = result.Expected == -1 ? "no-ref" : (result.Match ? "OK" : "MISMATCH");
+        sb.AppendLine(string.Format(inv,
+            "| {0} | {1} | {2} | {3} | {4:N0} | {5:F1} | {6:N0} | {7} | {8} |",
+            date, commit, position, depth, result.Nodes, ms, nps, config, status));
+    }
+
+    File.AppendAllText(path, sb.ToString());
+    Console.WriteLine($"Recorded {rows.Count} row(s) to {path}");
+}
+
+// Walk up from AppContext.BaseDirectory to locate chess-perft/benchmarks.md.
+// Needed because `dotnet run` puts the CWD somewhere under bin/.
+static string FindBenchmarksPath()
+{
+    var dir = new DirectoryInfo(AppContext.BaseDirectory);
+    while (dir != null && !File.Exists(Path.Combine(dir.FullName, "chess-perft.csproj")))
+        dir = dir.Parent;
+
+    if (dir == null)
+        throw new InvalidOperationException("Could not find chess-perft project root from AppContext.BaseDirectory.");
+
+    return Path.Combine(dir.FullName, "benchmarks.md");
+}
+
+static string GetCommitSha()
+{
+    try
+    {
+        string sha = RunGit("rev-parse --short HEAD").Trim();
+        string porcelain = RunGit("status --porcelain").Trim();
+        return string.IsNullOrEmpty(porcelain) ? sha : $"{sha}-dirty";
+    }
+    catch
+    {
+        return "unknown";
+    }
+}
+
+static string RunGit(string args)
+{
+    var psi = new ProcessStartInfo("git", args)
+    {
+        RedirectStandardOutput = true,
+        RedirectStandardError = true,
+        UseShellExecute = false,
+        CreateNoWindow = true,
+    };
+    using var proc = Process.Start(psi)!;
+    string stdout = proc.StandardOutput.ReadToEnd();
+    proc.WaitForExit();
+    if (proc.ExitCode != 0) throw new InvalidOperationException("git failed");
+    return stdout;
+}
+
+static string GetBuildConfig()
+{
+#if DEBUG
+    return "Debug";
+#else
+    return "Release";
+#endif
 }
