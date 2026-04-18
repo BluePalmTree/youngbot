@@ -44,25 +44,70 @@
             <MenuItem Header="Testing">
                 <MenuItem Header="Perft">
                     <MenuItem Header="Start position">
-                        <MenuItem Command="{Binding RunPerftCommand}" CommandParameter="start 1" Header="1" />
-                        <MenuItem Command="{Binding RunPerftCommand}" CommandParameter="start 2" Header="2" />
-                        <MenuItem Command="{Binding RunPerftCommand}" CommandParameter="start 3" Header="3" />
-                        <MenuItem Command="{Binding RunPerftCommand}" CommandParameter="start 4" Header="4" />
-                        <MenuItem Command="{Binding RunPerftCommand}" CommandParameter="start 5" Header="5" />
-                        <MenuItem Command="{Binding RunPerftCommand}" CommandParameter="start 6" Header="6" />
+                        <MenuItem
+                            Command="{Binding RunPerftCommand}"
+                            CommandParameter="start 1"
+                            Header="1" />
+                        <MenuItem
+                            Command="{Binding RunPerftCommand}"
+                            CommandParameter="start 2"
+                            Header="2" />
+                        <MenuItem
+                            Command="{Binding RunPerftCommand}"
+                            CommandParameter="start 3"
+                            Header="3" />
+                        <MenuItem
+                            Command="{Binding RunPerftCommand}"
+                            CommandParameter="start 4"
+                            Header="4" />
+                        <MenuItem
+                            Command="{Binding RunPerftCommand}"
+                            CommandParameter="start 5"
+                            Header="5" />
+                        <MenuItem
+                            Command="{Binding RunPerftCommand}"
+                            CommandParameter="start 6"
+                            Header="6" />
                     </MenuItem>
                     <MenuItem Header="Kiwipete">
-                        <MenuItem Command="{Binding RunPerftCommand}" CommandParameter="kiwipete 1" Header="1" />
-                        <MenuItem Command="{Binding RunPerftCommand}" CommandParameter="kiwipete 2" Header="2" />
-                        <MenuItem Command="{Binding RunPerftCommand}" CommandParameter="kiwipete 3" Header="3" />
-                        <MenuItem Command="{Binding RunPerftCommand}" CommandParameter="kiwipete 4" Header="4" />
+                        <MenuItem
+                            Command="{Binding RunPerftCommand}"
+                            CommandParameter="kiwipete 1"
+                            Header="1" />
+                        <MenuItem
+                            Command="{Binding RunPerftCommand}"
+                            CommandParameter="kiwipete 2"
+                            Header="2" />
+                        <MenuItem
+                            Command="{Binding RunPerftCommand}"
+                            CommandParameter="kiwipete 3"
+                            Header="3" />
+                        <MenuItem
+                            Command="{Binding RunPerftCommand}"
+                            CommandParameter="kiwipete 4"
+                            Header="4" />
                     </MenuItem>
                     <MenuItem Header="Position 3">
-                        <MenuItem Command="{Binding RunPerftCommand}" CommandParameter="position3 1" Header="1" />
-                        <MenuItem Command="{Binding RunPerftCommand}" CommandParameter="position3 2" Header="2" />
-                        <MenuItem Command="{Binding RunPerftCommand}" CommandParameter="position3 3" Header="3" />
-                        <MenuItem Command="{Binding RunPerftCommand}" CommandParameter="position3 4" Header="4" />
-                        <MenuItem Command="{Binding RunPerftCommand}" CommandParameter="position3 5" Header="5" />
+                        <MenuItem
+                            Command="{Binding RunPerftCommand}"
+                            CommandParameter="position3 1"
+                            Header="1" />
+                        <MenuItem
+                            Command="{Binding RunPerftCommand}"
+                            CommandParameter="position3 2"
+                            Header="2" />
+                        <MenuItem
+                            Command="{Binding RunPerftCommand}"
+                            CommandParameter="position3 3"
+                            Header="3" />
+                        <MenuItem
+                            Command="{Binding RunPerftCommand}"
+                            CommandParameter="position3 4"
+                            Header="4" />
+                        <MenuItem
+                            Command="{Binding RunPerftCommand}"
+                            CommandParameter="position3 5"
+                            Header="5" />
                     </MenuItem>
                 </MenuItem>
             </MenuItem>
@@ -80,6 +125,14 @@
                 <MenuItem
                     Header="Highlight attacked Sqaures"
                     IsChecked="{Binding HighlightAttackedSquares, Mode=TwoWay}"
+                    ToggleType="CheckBox" />
+                <MenuItem
+                    Header="Highlight pinned Sqaures"
+                    IsChecked="{Binding HighlightPinnedSquares, Mode=TwoWay}"
+                    ToggleType="CheckBox" />
+                <MenuItem
+                    Header="Highlight check Sqaures"
+                    IsChecked="{Binding HighlightCheckSquares, Mode=TwoWay}"
                     ToggleType="CheckBox" />
             </MenuItem>
         </Menu>
@@ -164,19 +217,6 @@
                         <DataTemplate>
                             <Border Background="{Binding IsLight, Converter={StaticResource SquareBackgroundConverter}, Mode=OneWay}" PointerPressed="OnPointerPressed">
                                 <Grid>
-                                    <!--  Yellow highlight overlay (last move + selected)  -->
-                                    <Border
-                                        Background="#d5bf1b"
-                                        IsHitTestVisible="False"
-                                        IsVisible="{Binding IsHighlighted}"
-                                        Opacity="0.55" />
-                                    <Border
-                                        Background="#d5aa1b"
-                                        IsHitTestVisible="False"
-                                        IsVisible="{Binding IsSelected}"
-                                        Opacity="0.6" />
-                                    <!-- <TextBlock Text="{Binding UiIndex}" Foreground="Purple"
-                                    HorizontalAlignment="Left" VerticalAlignment="Top" />-->
                                     <Grid IsVisible="{Binding $parent[ItemsControl].((vm:BoardViewModel)DataContext).HighlightAttackedSquares}">
                                         <Border
                                             Background="Aqua"
@@ -191,10 +231,41 @@
                                         </Border>
                                     </Grid>
                                     <Border
-                                        Background="#ff6060"
+                                        Background="#175802"
                                         IsHitTestVisible="False"
-                                        IsVisible="{Binding IsValidMoveTarget}"
-                                        Opacity="0.70" />
+                                        IsVisible="{Binding IsHighlighted}"
+                                        Opacity="0.6" />
+                                    <Border
+                                        Background="#4d4991"
+                                        IsHitTestVisible="False"
+                                        IsVisible="{Binding IsSelected}"
+                                        Opacity="0.75" />
+                                    <Grid IsVisible="{Binding $parent[ItemsControl].((vm:BoardViewModel)DataContext).HighlightPinnedSquares}">
+                                        <Border
+                                            Background="#ad06b3"
+                                            IsHitTestVisible="False"
+                                            Opacity="0.85">
+                                            <Border.IsVisible>
+                                                <MultiBinding Converter="{StaticResource IsInCollectionConverter}">
+                                                    <Binding Path="EngineIndex" />
+                                                    <Binding Path="$parent[ItemsControl].((vm:BoardViewModel)DataContext).PinnedSquares" />
+                                                </MultiBinding>
+                                            </Border.IsVisible>
+                                        </Border>
+                                    </Grid>
+                                    <Grid IsVisible="{Binding $parent[ItemsControl].((vm:BoardViewModel)DataContext).HighlightCheckSquares}">
+                                        <Border
+                                            Background="#15a4d4"
+                                            IsHitTestVisible="False"
+                                            Opacity="0.85">
+                                            <Border.IsVisible>
+                                                <MultiBinding Converter="{StaticResource IsInCollectionConverter}">
+                                                    <Binding Path="EngineIndex" />
+                                                    <Binding Path="$parent[ItemsControl].((vm:BoardViewModel)DataContext).CheckSquares" />
+                                                </MultiBinding>
+                                            </Border.IsVisible>
+                                        </Border>
+                                    </Grid>
                                     <TextBlock
                                         HorizontalAlignment="Left"
                                         VerticalAlignment="Bottom"
@@ -206,6 +277,12 @@
                                         IsHitTestVisible="False"
                                         Opacity="{Binding IsGhost, Converter={StaticResource BoolToOpacityConverter}}"
                                         Source="{Binding Piece, Converter={StaticResource PieceToImageConverter}, Mode=OneWay}" />
+                                    <Ellipse
+                                        Width="32"
+                                        Height="32"
+                                        Fill="#4d4991"
+                                        IsVisible="{Binding IsValidMoveTarget}"
+                                        Opacity="0.75" />
                                 </Grid>
                             </Border>
                         </DataTemplate>

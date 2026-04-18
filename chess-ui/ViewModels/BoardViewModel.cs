@@ -13,8 +13,12 @@ namespace chess_ui.ViewModels
 {
     public partial class BoardViewModel : ViewModelBase
     {
+        private const string StartPosition = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"; // default
+        //private const string StartPosition = "r3k3/1p3p2/p2q2p1/bn3P2/1N2PQP1/PB6/3K1R1r/3R4 w - - 0 1"; // seb
+
+
+
         private const byte BoardSize = 8;
-        private const string StartPosition = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"; // default        
         private Board _board;
         private Move? _pendingPromotionMove;
 
@@ -43,6 +47,8 @@ namespace chess_ui.ViewModels
             Squares = new ObservableCollection<SquareViewModel>(sq);
             _board = new Board();
             AttackedSquares = [];
+            PinnedSquares = [];
+            CheckSquares = [];
 
             NewGame();
         }
@@ -84,7 +90,19 @@ namespace chess_ui.ViewModels
         private ObservableCollection<int> _attackedSquares;
 
         [ObservableProperty]
-        private bool _highlightAttackedSquares = true;
+        private ObservableCollection<int> _pinnedSquares;
+
+        [ObservableProperty]
+        private ObservableCollection<int> _checkSquares;
+
+        [ObservableProperty]
+        private bool _highlightAttackedSquares = false;
+
+        [ObservableProperty]
+        private bool _highlightPinnedSquares = false;
+
+        [ObservableProperty]
+        private bool _highlightCheckSquares = false;
 
         #endregion
 
@@ -101,6 +119,8 @@ namespace chess_ui.ViewModels
             HalfMoveClock = _board.HalfMoveClock;
             GameStatesCount = _board.GameStates.Count;
             AttackedSquares = new ObservableCollection<int>(_board.AttackedSquares);
+            PinnedSquares = new ObservableCollection<int>(_board.AttackData?.PinLines.SelectMany(e => e.Value) ?? []);
+            CheckSquares = new ObservableCollection<int>(_board.AttackData?.CheckBlockMask ?? []);
 
             foreach (var sq in Squares)
             {
@@ -126,6 +146,8 @@ namespace chess_ui.ViewModels
             CastlingRights = _board.CastlingRights;
             EnPassantSquare = _board.EnPassantSquare;
             AttackedSquares = new ObservableCollection<int>(_board.AttackedSquares);
+            PinnedSquares = new ObservableCollection<int>(_board.AttackData?.PinLines.SelectMany(e => e.Value) ?? []);
+            CheckSquares = new ObservableCollection<int>(_board.AttackData?.CheckBlockMask ?? []);
 
             foreach (var sq in Squares)
             {
@@ -247,6 +269,8 @@ namespace chess_ui.ViewModels
             CastlingRights = _board.CastlingRights;
             EnPassantSquare = _board.EnPassantSquare;
             AttackedSquares = new ObservableCollection<int>(_board.AttackedSquares);
+            PinnedSquares = new ObservableCollection<int>(_board.AttackData?.PinLines.SelectMany(e => e.Value) ?? []);
+            CheckSquares = new ObservableCollection<int>(_board.AttackData?.CheckBlockMask ?? []);
 
             if (HalfMoveClock >= 50)
             {

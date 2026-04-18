@@ -1,3 +1,11 @@
+### Goal of this project
+
+The goal of this project is to improve my programming skills and also improve me use of AI and chess.
+
+### Inspired By
+
+https://www.youtube.com/watch?v=U4ogK0MIzqk&t=1s
+
 ### Language
 
 | German      | English   |

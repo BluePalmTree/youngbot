@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using chess_engine.Models;
 
 namespace chess_engine.Helpers
@@ -6,6 +7,8 @@ namespace chess_engine.Helpers
     // Produced once by Compute(), consumed by the legal-move generator and IsInCheck.
     public class AttackData
     {
+        private static readonly bool d = true;
+
         // Squares the opponent attacks. Sliders X-ray THROUGH our king only, so
         // the square immediately "behind" our king along an attacking ray is
         // also flagged — this is what stops the king from escaping backward.
@@ -34,34 +37,46 @@ namespace chess_engine.Helpers
             int opponent = ownColor == Piece.White ? Piece.Black : Piece.White;
             int ownKing = board.GetKingSquare(ownColor);
 
-            for (int sq = 0; sq < 64; sq++)
+            if (d) Debug.WriteLine($"Computing attack data for {Piece.GetColorText(opponent)}");
+
+            for (int square = 0; square < 64; square++)
             {
-                int piece = board.Squares[sq];
-                if (!Piece.IsColor(piece, opponent)) continue;
+                int piece = board.Squares[square];
+                if (!Piece.IsColor(piece, opponent))
+                    continue;
 
                 int type = Piece.TypeOf(piece);
                 switch (type)
                 {
                     case Piece.Pawn:
-                        AddPawnAttacks(data, sq, opponent, ownKing);
+                        AddPawnAttacks(data, square, opponent, ownKing);
                         break;
                     case Piece.Knight:
-                        AddKnightAttacks(data, sq, ownKing);
+                        AddKnightAttacks(data, square, ownKing);
                         break;
                     case Piece.King:
-                        AddKingAttacks(data, sq);
+                        AddKingAttacks(data, square);
                         break;
                     case Piece.Bishop:
                     case Piece.Rook:
                     case Piece.Queen:
-                        AddSliderAttacks(board, data, sq, type, ownKing);
+                        AddSliderAttacks(board, data, square, type, ownKing);
                         break;
                 }
             }
 
+            if (d)
+            {
+                Debug.WriteLine($"Recorded attacks: {data.AttackMap.Count}");
+                Debug.WriteLine($"Check block mask: {string.Join(", ", data.CheckBlockMask ?? [])}");
+            }
+
             // Normalize check state: double check → empty block mask (no non-king move legal).
             if (data.Checkers.Count >= 2)
+            {
+                if (d) Debug.WriteLine($"Two or more checks possible only king moves legal");
                 data.CheckBlockMask = [];
+            }
             // Count == 0: stays null (no filter). Count == 1: populated by slider/knight/pawn logic.
 
             // Special case: when single check comes from a pawn that just double-pushed,
@@ -76,80 +91,101 @@ namespace chess_engine.Helpers
                     if (diff == 8 || diff == -8)
                         data.CheckBlockMask.Add(board.EnPassantSquare);
                 }
+
+                if (d) Debug.WriteLine($"Check block mask: {string.Join(", ", data.CheckBlockMask ?? [])}");
             }
 
             if (ownKing != -1)
                 FindPins(board, data, ownKing, ownColor, opponent);
+
+            if (d)
+            {
+                Debug.WriteLine($"Done - Computing attack data for {Piece.GetColorText(opponent)}");
+                Debug.WriteLine(new string('-', 40));
+            }
 
             return data;
         }
 
         // Pawn attacks are the two forward-diagonals only. Pushes and EP targets
         // are NOT attacks in the king-safety sense.
-        private static void AddPawnAttacks(AttackData data, int sq, int pawnColor, int ownKing)
+        private static void AddPawnAttacks(AttackData data, int square, int pawnColor, int ownKing)
         {
-            int file = sq % 8;
-            int rank = sq / 8;
+            int file = square % 8;
+            int rank = square / 8;
 
             if (pawnColor == Piece.White)
             {
                 if (rank < 7)
                 {
-                    if (file > 0) RecordAttack(data, sq + 7, sq, ownKing, isSlider: false, rayOffset: 0);
-                    if (file < 7) RecordAttack(data, sq + 9, sq, ownKing, isSlider: false, rayOffset: 0);
+                    if (file > 0)
+                        RecordAttack(data, square + 7, square, ownKing, isSlider: false, rayOffset: 0);
+
+                    if (file < 7)
+                        RecordAttack(data, square + 9, square, ownKing, isSlider: false, rayOffset: 0);
                 }
             }
             else
             {
                 if (rank > 0)
                 {
-                    if (file > 0) RecordAttack(data, sq - 9, sq, ownKing, isSlider: false, rayOffset: 0);
-                    if (file < 7) RecordAttack(data, sq - 7, sq, ownKing, isSlider: false, rayOffset: 0);
+                    if (file > 0)
+                        RecordAttack(data, square - 9, square, ownKing, isSlider: false, rayOffset: 0);
+
+                    if (file < 7)
+                        RecordAttack(data, square - 7, square, ownKing, isSlider: false, rayOffset: 0);
                 }
             }
         }
 
-        private static readonly (int df, int dr)[] KnightJumps =
-        {
+        private static readonly (int deltaFile, int deltaRank)[] KnightJumps =
+        [
             (+1, +2), (-1, +2), (+1, -2), (-1, -2),
             (+2, +1), (-2, +1), (+2, -1), (-2, -1),
-        };
+        ];
 
-        private static void AddKnightAttacks(AttackData data, int sq, int ownKing)
+        private static void AddKnightAttacks(AttackData data, int square, int ownKing)
         {
-            int file = sq % 8;
-            int rank = sq / 8;
+            int file = square % 8;
+            int rank = square / 8;
 
-            foreach (var (df, dr) in KnightJumps)
+            foreach (var (deltaFile, deltaRank) in KnightJumps)
             {
-                int tf = file + df;
-                int tr = rank + dr;
-                if (tf < 0 || tf > 7 || tr < 0 || tr > 7) continue;
-                int target = tr * 8 + tf;
-                RecordAttack(data, target, sq, ownKing, isSlider: false, rayOffset: 0);
+                int targetFile = file + deltaFile;
+                int targetRank = rank + deltaRank;
+                if (targetFile < 0 || targetFile > 7 || targetRank < 0 || targetRank > 7)
+                    continue;
+
+                int targetSquare = targetRank * 8 + targetFile;
+                RecordAttack(data, targetSquare, square, ownKing, isSlider: false, rayOffset: 0);
             }
         }
 
-        private static void AddKingAttacks(AttackData data, int sq)
+        private static void AddKingAttacks(AttackData data, int square)
         {
-            int file = sq % 8;
-            int rank = sq / 8;
-            for (int df = -1; df <= 1; df++)
+            int file = square % 8;
+            int rank = square / 8;
+
+            for (int deltaFile = -1; deltaFile <= 1; deltaFile++)
             {
-                for (int dr = -1; dr <= 1; dr++)
+                for (int deltaRank = -1; deltaRank <= 1; deltaRank++)
                 {
-                    if (df == 0 && dr == 0) continue;
-                    int tf = file + df;
-                    int tr = rank + dr;
-                    if (tf < 0 || tf > 7 || tr < 0 || tr > 7) continue;
-                    int target = tr * 8 + tf;
+                    if (deltaFile == 0 && deltaRank == 0)
+                        continue;
+
+                    int targetFile = file + deltaFile;
+                    int targetRank = rank + deltaRank;
+                    if (targetFile < 0 || targetFile > 7 || targetRank < 0 || targetRank > 7)
+                        continue;
+
+                    int targetSquare = targetRank * 8 + targetFile;
                     // Kings can't check kings (would be illegal position), but mark as attacked anyway.
-                    data.AttackMap.Add(target);
+                    data.AttackMap.Add(targetSquare);
                 }
             }
         }
 
-        private static void AddSliderAttacks(Board board, AttackData data, int sq, int pieceType, int ownKing)
+        private static void AddSliderAttacks(Board board, AttackData data, int square, int pieceType, int ownKing)
         {
             int startDir = pieceType == Piece.Bishop ? 4 : 0;
             int endDir = pieceType == Piece.Rook ? 4 : 8;
@@ -157,27 +193,28 @@ namespace chess_engine.Helpers
             for (int dir = startDir; dir < endDir; dir++)
             {
                 int offset = MoveGenerator.DirectionOffsets[dir];
-                int maxSteps = MoveGenerator.NumSquaresToEdge[sq][dir];
+                int maxSteps = MoveGenerator.NumSquaresToEdge[square][dir];
                 bool passedKing = false;
 
                 for (int step = 1; step <= maxSteps; step++)
                 {
-                    int target = sq + offset * step;
-                    data.AttackMap.Add(target);
+                    int targetSquare = square + offset * step;
+                    data.AttackMap.Add(targetSquare);
 
-                    int pieceAtTarget = board.Squares[target];
-                    if (pieceAtTarget == Piece.None) continue;
+                    int pieceAtTarget = board.Squares[targetSquare];
+                    if (pieceAtTarget == Piece.None)
+                        continue;
 
-                    if (target == ownKing && !passedKing)
+                    if (targetSquare == ownKing && !passedKing)
                     {
-                        data.Checkers.Add(sq);
+                        data.Checkers.Add(square);
 
                         // Single-check block mask: the slider's square itself (capture) plus
                         // every square strictly between slider and king (interpose).
-                        data.CheckBlockMask ??= new HashSet<int>();
-                        data.CheckBlockMask.Add(sq);
+                        data.CheckBlockMask ??= [];
+                        data.CheckBlockMask.Add(square);
                         for (int s = 1; s < step; s++)
-                            data.CheckBlockMask.Add(sq + offset * s);
+                            data.CheckBlockMask.Add(square + offset * s);
 
                         // X-ray: keep adding attacked squares past the king so the king
                         // can't escape backward along the ray.
@@ -209,7 +246,8 @@ namespace chess_engine.Helpers
                 {
                     int target = ownKing + offset * step;
                     int piece = board.Squares[target];
-                    if (piece == Piece.None) continue;
+                    if (piece == Piece.None)
+                        continue;
 
                     if (firstOwn == -1)
                     {
@@ -226,7 +264,8 @@ namespace chess_engine.Helpers
                     }
 
                     // Second piece on the ray.
-                    if (!Piece.IsColor(piece, opponent)) break;
+                    if (!Piece.IsColor(piece, opponent))
+                        break;
 
                     int type = Piece.TypeOf(piece);
                     bool matches =
@@ -234,14 +273,18 @@ namespace chess_engine.Helpers
                         (diagonal && type == Piece.Bishop) ||
                         (!diagonal && type == Piece.Rook);
 
-                    if (!matches) break;
+                    if (!matches)
+                        break;
 
                     // firstOwn is pinned. Allowed targets: every square between king
                     // and pinner (exclusive of king) plus the pinner's own square.
                     var pinLine = new HashSet<int>();
                     for (int s = 1; s < step; s++)
                         pinLine.Add(ownKing + offset * s);
+
                     pinLine.Add(target);
+                    if (d) Debug.WriteLine($"Pin line: {string.Join(", ", pinLine)}");
+
                     data.PinLines[firstOwn] = pinLine;
                     break;
                 }
@@ -250,15 +293,18 @@ namespace chess_engine.Helpers
 
         // Helper so pawn/knight attack recording can report a checker uniformly.
         // (Sliders have their own path because of X-ray + block-mask logic.)
-        private static void RecordAttack(AttackData data, int target, int attackerSq, int ownKing, bool isSlider, int rayOffset)
+        private static void RecordAttack(AttackData data, int target, int attackerSquare, int ownKing, bool isSlider, int rayOffset)
         {
             data.AttackMap.Add(target);
+            if (d) Debug.WriteLine($"Record attack for {attackerSquare} to {target}");
+
             if (target == ownKing)
             {
-                data.Checkers.Add(attackerSq);
+                data.Checkers.Add(attackerSquare);
                 // Non-slider check: only way to resolve (besides king move) is to capture the checker.
-                data.CheckBlockMask ??= new HashSet<int>();
-                data.CheckBlockMask.Add(attackerSq);
+                data.CheckBlockMask ??= [];
+                data.CheckBlockMask.Add(attackerSquare);
+                if (d) Debug.WriteLine(" The attack is a check!");
             }
         }
     }
