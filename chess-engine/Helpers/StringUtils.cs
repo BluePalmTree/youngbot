@@ -13,6 +13,8 @@ namespace chess_engine.Helpers
             {
                 if (i > 0 && (raw.Length - i) % 8 == 0)
                     sb.Append('_');
+                // else if (i > 0 && (raw.Length - i) % 4 == 0)
+                //     sb.Append('.');
 
                 sb.Append(raw[i]);
             }

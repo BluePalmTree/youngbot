@@ -1,6 +1,6 @@
 using System.Diagnostics;
 using System.Globalization;
-using chess_engine.Helpers;
+using chess_engine.Engine;
 
 namespace chess_perft;
 

@@ -26,10 +26,6 @@ namespace chess_engine.Models
 
         public readonly Stack<GameState> GameStates;
 
-        // UI-facing mirror of AttackData.AttackMap (list form for ObservableCollection binding).
-        // Populated by MoveGenerator.GenerateLegalMoves; invalidated on Make/Unmake.
-        public List<int> AttackedSquares;
-
         // Cached opponent-perspective attack data for the current side to move.
         // Nullable on purpose — set to null at the top of MakeMove / UnmakeMove so
         // any consumer that reads stale data gets a loud NullReferenceException
@@ -45,7 +41,6 @@ namespace chess_engine.Models
             HalfMoveClock = 0;
             FullMoveNumber = 0;
             GameStates = [];
-            AttackedSquares = [];
         }
 
         public static Board FromStartPosition(string fen)
@@ -133,7 +128,6 @@ namespace chess_engine.Models
         public void MakeMove(Move move, bool uiMove = false)
         {
             AttackData = null;
-            AttackedSquares.Clear();
 
             var gs = new GameState
             {
@@ -250,7 +244,6 @@ namespace chess_engine.Models
         public void UnmakeMove(Move move, GameState gameState)
         {
             AttackData = null;
-            AttackedSquares.Clear();
 
             EnPassantSquare = gameState.EnPassantSquare;
             CastlingRights = gameState.CastlingRights;
@@ -340,8 +333,7 @@ namespace chess_engine.Models
 
             // Fast path: cached AttackData is valid for the current side to move.
             var data = AttackData ?? Engine.AttackData.Compute(this, ColorToMove);
-            return data.AttackMap.Contains(kingSquare);
-            //return (data.AttackMap2 & 1UL << kingSquare) != 0;
+            return (data.AttackMap & 1UL << kingSquare) != 0;
         }
 
         public string GetFEN()

@@ -56,7 +56,6 @@ namespace chess_engine.Engine
         {
             var data = AttackData.Compute(board, board.ColorToMove);
             board.AttackData = data;
-            board.AttackedSquares = [.. data.AttackMap];
 
             int ownKing = board.GetKingSquare(board.ColorToMove);
 
@@ -86,11 +85,11 @@ namespace chess_engine.Engine
             if (data.InDoubleCheck) return false;
 
             // Under single check: non-king move must land on a blocking or capturing square.
-            if (data.CheckBlockMask != null && !data.CheckBlockMask.Contains(move.To))
+            if (data.CheckBlockMask != null && (data.CheckBlockMask & (1UL << move.To)) == 0)
                 return false;
 
             // Pinned piece: target must lie on the pin line.
-            if (data.PinLines.TryGetValue(move.From, out var pinLine) && !pinLine.Contains(move.To))
+            if (data.PinLines.TryGetValue(move.From, out var pinLine) && (pinLine & 1UL << move.To) == 0)
                 return false;
 
             // En-passant horizontal-discovered-pin: removing BOTH pawns from the 5th/4th rank
@@ -104,7 +103,8 @@ namespace chess_engine.Engine
         private static bool IsLegalKingMove(AttackData data, Move move)
         {
             // A king move that lands on an attacked square is suicide.
-            if (data.AttackMap.Contains(move.To)) return false;
+            if ((data.AttackMap & 1UL << move.To) != 0)
+                return false;
 
             if (move.Flag == MoveFlag.KingSideCastle || move.Flag == MoveFlag.QueenSideCastle)
             {
@@ -116,7 +116,8 @@ namespace chess_engine.Engine
                 //  landing square was checked above.)
                 int step = move.Flag == MoveFlag.KingSideCastle ? +1 : -1;
                 int through = move.From + step;
-                if (data.AttackMap.Contains(through)) return false;
+                if ((data.AttackMap & 1UL << through) != 0)
+                    return false;
             }
 
             return true;

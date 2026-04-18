@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.Linq;
 using chess_engine.Bots;
 using chess_engine.Engine;
+using chess_engine.Helpers;
 using chess_engine.Models;
 using chess_ui.Helpers;
 using CommunityToolkit.Mvvm.ComponentModel;
@@ -46,9 +47,9 @@ namespace chess_ui.ViewModels
             }
             Squares = new ObservableCollection<SquareViewModel>(sq);
             _board = new Board();
-            AttackedSquares = [];
-            PinnedSquares = [];
-            CheckSquares = [];
+            AttackedSquares = 0UL;
+            PinnedSquares = 0UL;
+            CheckSquares = 0UL;
 
             NewGame();
         }
@@ -81,19 +82,19 @@ namespace chess_ui.ViewModels
         private string _gameOverMessage = string.Empty;
 
         [ObservableProperty]
-        private bool _isBlackBot = true;
+        private bool _isBlackBot = false;
 
         [ObservableProperty]
         private bool _isWhiteBot;
 
         [ObservableProperty]
-        private ObservableCollection<int> _attackedSquares;
+        private ulong _attackedSquares;
 
         [ObservableProperty]
-        private ObservableCollection<int> _pinnedSquares;
+        private ulong _pinnedSquares;
 
         [ObservableProperty]
-        private ObservableCollection<int> _checkSquares;
+        private ulong _checkSquares;
 
         [ObservableProperty]
         private bool _highlightAttackedSquares = false;
@@ -118,9 +119,9 @@ namespace chess_ui.ViewModels
             FullMoveNumber = _board.FullMoveNumber;
             HalfMoveClock = _board.HalfMoveClock;
             GameStatesCount = _board.GameStates.Count;
-            AttackedSquares = new ObservableCollection<int>(_board.AttackedSquares);
-            PinnedSquares = new ObservableCollection<int>(_board.AttackData?.PinLines.SelectMany(e => e.Value) ?? []);
-            CheckSquares = new ObservableCollection<int>(_board.AttackData?.CheckBlockMask ?? []);
+            AttackedSquares = _board.AttackData?.AttackMap ?? 0UL;
+            PinnedSquares = _board.AttackData is null ? 0 : BitUtils.OrListTogether(_board.AttackData.PinLines.Values);
+            CheckSquares = _board.AttackData?.CheckBlockMask ?? 0UL;
 
             foreach (var sq in Squares)
             {
@@ -145,9 +146,9 @@ namespace chess_ui.ViewModels
             HalfMoveClock = _board.HalfMoveClock;
             CastlingRights = _board.CastlingRights;
             EnPassantSquare = _board.EnPassantSquare;
-            AttackedSquares = new ObservableCollection<int>(_board.AttackedSquares);
-            PinnedSquares = new ObservableCollection<int>(_board.AttackData?.PinLines.SelectMany(e => e.Value) ?? []);
-            CheckSquares = new ObservableCollection<int>(_board.AttackData?.CheckBlockMask ?? []);
+            AttackedSquares = _board.AttackData?.AttackMap ?? 0UL;
+            PinnedSquares = _board.AttackData is null ? 0 : BitUtils.OrListTogether(_board.AttackData.PinLines.Values);
+            CheckSquares = _board.AttackData?.CheckBlockMask ?? 0UL;
 
             foreach (var sq in Squares)
             {
@@ -268,9 +269,9 @@ namespace chess_ui.ViewModels
             HalfMoveClock = _board.HalfMoveClock;
             CastlingRights = _board.CastlingRights;
             EnPassantSquare = _board.EnPassantSquare;
-            AttackedSquares = new ObservableCollection<int>(_board.AttackedSquares);
-            PinnedSquares = new ObservableCollection<int>(_board.AttackData?.PinLines.SelectMany(e => e.Value) ?? []);
-            CheckSquares = new ObservableCollection<int>(_board.AttackData?.CheckBlockMask ?? []);
+            AttackedSquares = _board.AttackData?.AttackMap ?? 0UL;
+            PinnedSquares = _board.AttackData is null ? 0 : BitUtils.OrListTogether(_board.AttackData.PinLines.Values);
+            CheckSquares = _board.AttackData?.CheckBlockMask ?? 0UL;
 
             if (HalfMoveClock >= 50)
             {

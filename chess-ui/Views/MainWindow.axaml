@@ -25,6 +25,7 @@
         <converters:CastlingRightsConverter x:Key="CastlingRightsConverter" />
         <converters:IsNotPlayingConverter x:Key="IsNotPlayingConverter" />
         <converters:IsInCollectionConverter x:Key="IsInCollectionConverter" />
+        <converters:BitWiseAndConvertMulti x:Key="BitWiseAndConvertMulti" />
     </Window.Resources>
 
     <Design.DataContext>
@@ -127,11 +128,11 @@
                     IsChecked="{Binding HighlightAttackedSquares, Mode=TwoWay}"
                     ToggleType="CheckBox" />
                 <MenuItem
-                    Header="Highlight pinned Sqaures"
+                    Header="Highlight pinned Squares"
                     IsChecked="{Binding HighlightPinnedSquares, Mode=TwoWay}"
                     ToggleType="CheckBox" />
                 <MenuItem
-                    Header="Highlight check Sqaures"
+                    Header="Highlight check Squares"
                     IsChecked="{Binding HighlightCheckSquares, Mode=TwoWay}"
                     ToggleType="CheckBox" />
             </MenuItem>
@@ -223,7 +224,7 @@
                                             IsHitTestVisible="False"
                                             Opacity="0.55">
                                             <Border.IsVisible>
-                                                <MultiBinding Converter="{StaticResource IsInCollectionConverter}">
+                                                <MultiBinding Converter="{StaticResource BitWiseAndConvertMulti}">
                                                     <Binding Path="EngineIndex" />
                                                     <Binding Path="$parent[ItemsControl].((vm:BoardViewModel)DataContext).AttackedSquares" />
                                                 </MultiBinding>
@@ -246,7 +247,7 @@
                                             IsHitTestVisible="False"
                                             Opacity="0.85">
                                             <Border.IsVisible>
-                                                <MultiBinding Converter="{StaticResource IsInCollectionConverter}">
+                                                <MultiBinding Converter="{StaticResource BitWiseAndConvertMulti}">
                                                     <Binding Path="EngineIndex" />
                                                     <Binding Path="$parent[ItemsControl].((vm:BoardViewModel)DataContext).PinnedSquares" />
                                                 </MultiBinding>
@@ -259,7 +260,7 @@
                                             IsHitTestVisible="False"
                                             Opacity="0.85">
                                             <Border.IsVisible>
-                                                <MultiBinding Converter="{StaticResource IsInCollectionConverter}">
+                                                <MultiBinding Converter="{StaticResource BitWiseAndConvertMulti}">
                                                     <Binding Path="EngineIndex" />
                                                     <Binding Path="$parent[ItemsControl].((vm:BoardViewModel)DataContext).CheckSquares" />
                                                 </MultiBinding>

@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using chess_engine.Helpers;
 using chess_engine.Models;
 
 namespace chess_engine.Engine
@@ -11,8 +12,8 @@ namespace chess_engine.Engine
 
         // Squares the opponent attacks. Sliders X-ray THROUGH our king only, so
         // the square immediately "behind" our king along an attacking ray is
-        // also flagged — this is what stops the king from escaping backward.
-        public HashSet<int> AttackMap = [];
+        // also flagged — this is what stops the king from escaping backward.        
+        public ulong AttackMap = 0;
 
         // Opponent pieces currently giving check to our king.
         public List<int> Checkers = [];
@@ -21,12 +22,12 @@ namespace chess_engine.Engine
         //   null     → no check; no filter for non-king moves
         //   empty    → double check; no non-king move can help
         //   non-empty → single check; target must be in this set (block or capture)
-        public HashSet<int>? CheckBlockMask;
+        public ulong? CheckBlockMask;
 
         // For each own piece that is absolutely pinned to our king, the set of
         // squares it may legally move to (between-king-and-pinner exclusive of
         // king, plus the pinner's own square for pin-capturing).
-        public Dictionary<int, HashSet<int>> PinLines = [];
+        public Dictionary<int, ulong> PinLines = [];
 
         public bool InCheck => Checkers.Count >= 1;
         public bool InDoubleCheck => Checkers.Count >= 2;
@@ -67,15 +68,15 @@ namespace chess_engine.Engine
 
             if (d)
             {
-                Debug.WriteLine($"Recorded attacks: {data.AttackMap.Count}");
-                Debug.WriteLine($"Check block mask: {string.Join(", ", data.CheckBlockMask ?? [])}");
+                Debug.WriteLine($"Attack map      : {StringUtils.ToBinary((long)data.AttackMap)}");
+                Debug.WriteLine($"Check block mask: {(data.CheckBlockMask is null ? "NULL" : StringUtils.ToBinary((long)data.CheckBlockMask))}");
             }
 
             // Normalize check state: double check → empty block mask (no non-king move legal).
             if (data.Checkers.Count >= 2)
             {
                 if (d) Debug.WriteLine($"Two or more checks possible only king moves legal");
-                data.CheckBlockMask = [];
+                data.CheckBlockMask = 0;
             }
             // Count == 0: stays null (no filter). Count == 1: populated by slider/knight/pawn logic.
 
@@ -89,10 +90,9 @@ namespace chess_engine.Engine
                 {
                     int diff = board.EnPassantSquare - checker;
                     if (diff == 8 || diff == -8)
-                        data.CheckBlockMask.Add(board.EnPassantSquare);
+                        data.CheckBlockMask |= 1UL << board.EnPassantSquare;
+                    //data.CheckBlockMask.Add(board.EnPassantSquare);
                 }
-
-                if (d) Debug.WriteLine($"Check block mask: {string.Join(", ", data.CheckBlockMask ?? [])}");
             }
 
             if (ownKing != -1)
@@ -178,9 +178,9 @@ namespace chess_engine.Engine
                     if (targetFile < 0 || targetFile > 7 || targetRank < 0 || targetRank > 7)
                         continue;
 
-                    int targetSquare = targetRank * 8 + targetFile;
-                    // Kings can't check kings (would be illegal position), but mark as attacked anyway.
-                    data.AttackMap.Add(targetSquare);
+                    int target = targetRank * 8 + targetFile;
+                    // Kings can't check kings (would be illegal position), but mark as attacked anyway.                
+                    data.AttackMap |= 1UL << target;
                 }
             }
         }
@@ -198,23 +198,23 @@ namespace chess_engine.Engine
 
                 for (int step = 1; step <= maxSteps; step++)
                 {
-                    int targetSquare = square + offset * step;
-                    data.AttackMap.Add(targetSquare);
+                    int target = square + offset * step;
+                    data.AttackMap |= 1UL << target;
 
-                    int pieceAtTarget = board.Squares[targetSquare];
+                    int pieceAtTarget = board.Squares[target];
                     if (pieceAtTarget == Piece.None)
                         continue;
 
-                    if (targetSquare == ownKing && !passedKing)
+                    if (target == ownKing && !passedKing)
                     {
                         data.Checkers.Add(square);
 
                         // Single-check block mask: the slider's square itself (capture) plus
-                        // every square strictly between slider and king (interpose).
-                        data.CheckBlockMask ??= [];
-                        data.CheckBlockMask.Add(square);
+                        // every square strictly between slider and king (interpose).                        
+                        data.CheckBlockMask ??= 0UL;
+                        data.CheckBlockMask |= 1UL << square;
                         for (int s = 1; s < step; s++)
-                            data.CheckBlockMask.Add(square + offset * s);
+                            data.CheckBlockMask |= 1UL << (square + offset * s);
 
                         // X-ray: keep adding attacked squares past the king so the king
                         // can't escape backward along the ray.
@@ -278,12 +278,12 @@ namespace chess_engine.Engine
 
                     // firstOwn is pinned. Allowed targets: every square between king
                     // and pinner (exclusive of king) plus the pinner's own square.
-                    var pinLine = new HashSet<int>();
+                    var pinLine = 0UL;
                     for (int s = 1; s < step; s++)
-                        pinLine.Add(ownKing + offset * s);
+                        pinLine |= 1UL << (ownKing + offset * s);
 
-                    pinLine.Add(target);
-                    if (d) Debug.WriteLine($"Pin line: {string.Join(", ", pinLine)}");
+                    pinLine |= 1UL << target;
+                    if (d) Debug.WriteLine($"Pin line: {StringUtils.ToBinary((long)pinLine)}");
 
                     data.PinLines[firstOwn] = pinLine;
                     break;
@@ -295,15 +295,14 @@ namespace chess_engine.Engine
         // (Sliders have their own path because of X-ray + block-mask logic.)
         private static void RecordAttack(AttackData data, int target, int attackerSquare, int ownKing, bool isSlider, int rayOffset)
         {
-            data.AttackMap.Add(target);
-            if (d) Debug.WriteLine($"Record attack for {attackerSquare} to {target}");
+            data.AttackMap |= 1UL << target;
 
             if (target == ownKing)
             {
                 data.Checkers.Add(attackerSquare);
                 // Non-slider check: only way to resolve (besides king move) is to capture the checker.
-                data.CheckBlockMask ??= [];
-                data.CheckBlockMask.Add(attackerSquare);
+                data.CheckBlockMask ??= 0UL;
+                data.CheckBlockMask |= 1UL << attackerSquare;
                 if (d) Debug.WriteLine(" The attack is a check!");
             }
         }
