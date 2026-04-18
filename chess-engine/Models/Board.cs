@@ -1,6 +1,6 @@
 using System.Diagnostics;
 using System.Text;
-using chess_engine.Helpers;
+using chess_engine.Engine;
 
 namespace chess_engine.Models
 {
@@ -335,11 +335,13 @@ namespace chess_engine.Models
         public bool IsInCheck()
         {
             int kingSquare = GetKingSquare(ColorToMove);
-            if (kingSquare == -1) return false;
+            if (kingSquare == -1)
+                return false;
 
             // Fast path: cached AttackData is valid for the current side to move.
-            var data = AttackData ?? Helpers.AttackData.Compute(this, ColorToMove);
+            var data = AttackData ?? Engine.AttackData.Compute(this, ColorToMove);
             return data.AttackMap.Contains(kingSquare);
+            //return (data.AttackMap2 & 1UL << kingSquare) != 0;
         }
 
         public string GetFEN()

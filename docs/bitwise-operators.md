@@ -35,6 +35,7 @@ bool bit3Set = (flags & (1 << 3)) != 0;   // true (bit 3 == 8 is present)
 ```
 
 **Uses:**
+
 - **Masking** — isolate a range of bits (`x & 0x0F` keeps the low nibble).
 - **Testing** — `(x & bitMask) != 0` asks "is this bit on?". Non-zero means
   yes, which is why the explicit `!= 0` is conventional (in C# `int` doesn't
@@ -66,6 +67,7 @@ rights |= CastleRights.WhiteQueen;   // adds bit 1, leaves the rest alone
 ```
 
 **Uses:**
+
 - **Building flag sets** — combining multiple single-bit values into one
   packed integer.
 - **Turning bits ON** — `x |= mask` guarantees every bit in `mask` is set in
@@ -104,6 +106,7 @@ hash ^= zobristKeys[whitePawn, e4];   // place it on e4
 ```
 
 **Uses:**
+
 - **Toggling** — `x ^= mask` flips exactly the bits in `mask`. Unlike `|`
   (which only sets) or `&` (which only clears), XOR can do both depending on
   the current state.
@@ -135,6 +138,7 @@ flags &= ~(1 << 3);       // 0b_0000_0010  (bit 3 cleared)
 ```
 
 **Uses:**
+
 - **Building "everything except" masks** — `~mask` gives the complement, so
   `x & ~mask` clears exactly those bits.
 - **Signed caveat** — on signed types (`int`, `sbyte`, …) `~x == -x - 1`
@@ -187,6 +191,7 @@ int z = 1 << 33;    // 2.           Count 33 is masked to (33 & 31) == 1.
 ```
 
 **Uses:**
+
 - **Building masks** — `1 << n` is the universal "single bit at position n"
   idiom used in set/clear/test bit.
 - **Fast multiply** — `x << n` == `x * (1 << n)`. Modern compilers do this
@@ -239,6 +244,7 @@ zero-fill behavior, or use `>>>` (unsigned right shift, C# 11+) which
 always zero-fills regardless of signedness.
 
 **Uses:**
+
 - **Unpacking fields** — combined with `&` masks to pull a packed field
   back out of an integer.
 - **Fast divide by power of 2** — `x >> n` for unsigned `x`.
@@ -279,25 +285,24 @@ pieces ^= 1UL << to;     // add at destination
 unsigned integer). The suffix matters because of how C# picks the type of
 a literal and how shifts interact with it:
 
-| Literal | Type | Bits |
-| --- | --- | --- |
-| `1`    | `int`  | 32 |
-| `1U`   | `uint` | 32 |
-| `1L`   | `long` | 64 |
-| `1UL`  | `ulong` | 64 |
+| Literal | Type    | Bits |
+| ------- | ------- | ---- |
+| `1`     | `int`   | 32   |
+| `1U`    | `uint`  | 32   |
+| `1L`    | `long`  | 64   |
+| `1UL`   | `ulong` | 64   |
 
 If you write `1 << 40`, the `1` is an `int` (32-bit), so shifting by 40
 overflows and you get `0` — a silent bug. `1UL << 40` gives you the bit at
 position 40 of a 64-bit value, which is what you want for a bitboard.
 
 ```csharp
-ulong bad  = (ulong)(1 << 40);    // 256 — because `1` is a 32-bit int,
-                                  //       the shift count is masked to (40 & 31) == 8,
-                                  //       giving `1 << 8 == 256`. NOT bit 40.
-                                  //       A silent lie that looks plausible.
+ulong bad  = (ulong)(1 << 40);    // 0 — the count is masked to (40 & 31) == 8,
+                                  //     so you get `1 << 8 == 256` in an int,
+                                  //     NOT bit 40. A silent lie.
 ulong good = 1UL << 40;           // bit 40 set, all others 0:
-                                  // 0b_0000_0000_0000_0000_0000_0001_0000_0000
-                                  //   _0000_0000_0000_0000_0000_0000_0000_0000
+                                  // 0b_0000_0000__0000_0000__0000_0001__0000_0000
+                                  //   __0000_0000__0000_0000__0000_0000__0000_0000
 ```
 
 (The result of `good` is a 64-bit value, so its binary form is 64 digits
@@ -332,19 +337,19 @@ engines because the per-square loops and set operations in a
 
 ## Common idioms cheat sheet
 
-| Goal | Expression |
-| --- | --- |
-| Set bit `n` | `x \|= 1UL << n` |
-| Clear bit `n` | `x &= ~(1UL << n)` |
-| Toggle bit `n` | `x ^= 1UL << n` |
-| Test bit `n` | `(x & (1UL << n)) != 0` |
-| Low `k` bits only | `x & ((1UL << k) - 1)` |
-| Clear low `k` bits | `x & ~((1UL << k) - 1)` |
-| Multiply by 2ⁿ | `x << n` |
-| Divide by 2ⁿ (unsigned) | `x >> n` |
-| Popcount (# of 1-bits) | `BitOperations.PopCount(x)` |
-| Index of lowest set bit | `BitOperations.TrailingZeroCount(x)` |
-| Index of highest set bit | `BitOperations.Log2(x)` |
+| Goal                     | Expression                           |
+| ------------------------ | ------------------------------------ |
+| Set bit `n`              | `x \|= 1UL << n`                     |
+| Clear bit `n`            | `x &= ~(1UL << n)`                   |
+| Toggle bit `n`           | `x ^= 1UL << n`                      |
+| Test bit `n`             | `(x & (1UL << n)) != 0`              |
+| Low `k` bits only        | `x & ((1UL << k) - 1)`               |
+| Clear low `k` bits       | `x & ~((1UL << k) - 1)`              |
+| Multiply by 2ⁿ           | `x << n`                             |
+| Divide by 2ⁿ (unsigned)  | `x >> n`                             |
+| Popcount (# of 1-bits)   | `BitOperations.PopCount(x)`          |
+| Index of lowest set bit  | `BitOperations.TrailingZeroCount(x)` |
+| Index of highest set bit | `BitOperations.Log2(x)`              |
 
 `System.Numerics.BitOperations` wraps hardware intrinsics (e.g. `POPCNT`,
 `BMI1`) so these are effectively free on modern CPUs.

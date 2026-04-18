@@ -3,7 +3,7 @@ using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Linq;
 using chess_engine.Bots;
-using chess_engine.Helpers;
+using chess_engine.Engine;
 using chess_engine.Models;
 using chess_ui.Helpers;
 using CommunityToolkit.Mvvm.ComponentModel;
@@ -13,8 +13,8 @@ namespace chess_ui.ViewModels
 {
     public partial class BoardViewModel : ViewModelBase
     {
-        private const string StartPosition = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"; // default
-        //private const string StartPosition = "r3k3/1p3p2/p2q2p1/bn3P2/1N2PQP1/PB6/3K1R1r/3R4 w - - 0 1"; // seb
+        //private const string StartPosition = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"; // default
+        private const string StartPosition = "r3k3/1p3p2/p2q2p1/bn3P2/1N2PQP1/PB6/3K1R1r/3R4 w - - 0 1"; // seb
 
 
 

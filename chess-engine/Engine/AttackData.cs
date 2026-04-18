@@ -1,7 +1,7 @@
 using System.Diagnostics;
 using chess_engine.Models;
 
-namespace chess_engine.Helpers
+namespace chess_engine.Engine
 {
     // Precomputed view of the position from the side-to-move's perspective.
     // Produced once by Compute(), consumed by the legal-move generator and IsInCheck.

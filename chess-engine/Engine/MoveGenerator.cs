@@ -1,7 +1,7 @@
 using System.Diagnostics;
 using chess_engine.Models;
 
-namespace chess_engine.Helpers
+namespace chess_engine.Engine
 {
     public static class MoveGenerator
     {

@@ -1,4 +1,4 @@
-using chess_engine.Helpers;
+using chess_engine.Engine;
 using chess_engine.Models;
 
 namespace chess_engine.Bots
