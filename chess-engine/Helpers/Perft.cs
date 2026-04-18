@@ -81,15 +81,33 @@ namespace chess_engine.Helpers
             long expected = ExpectedNodes.TryGetValue(positionKey, out var byDepth)
                             && byDepth.TryGetValue(depth, out long v)
                           ? v : -1;
-            string status = expected == -1 ? "(no reference)"
-                          : total == expected ? "OK" : $"MISMATCH (expected {expected:N0}, diff {total - expected:+#;-#;0})";
+
+            string expectedPart;
+            string status;
+            if (expected == -1)
+            {
+                expectedPart = "(no reference)";
+                status = "—";
+            }
+            else if (total == expected)
+            {
+                expectedPart = $"(expected {expected:N0})";
+                status = "OK";
+            }
+            else
+            {
+                expectedPart = $"(expected {expected:N0}, diff {total - expected:+#;-#;0})";
+                status = "MISMATCH";
+            }
+
+            string summary = $"Perft {label} depth {depth}: {total:N0} {expectedPart} in {totalElapsed} — {status}";
 
             Debug.WriteLine("--------------------------------------");
-            Debug.WriteLine($"Perft {label} depth {depth}: {total:N0} in {totalElapsed} — {status}");
+            Debug.WriteLine(summary);
 
             // Mirror the summary to stdout so headless callers (CLI perft harness, piped runs)
             // don't need a debugger attached to see results. Per-move lines stay on Debug.
-            Console.WriteLine($"Perft {label} depth {depth}: {total:N0} in {totalElapsed} — {status}");
+            Console.WriteLine(summary);
 
             return new PerftResult(total, totalTime, expected, expected != -1 && total == expected);
         }
