@@ -30,7 +30,7 @@ internal class Program
 
     private static readonly (string key, int depth)[] DefaultSuite =
     [
-        ("start", 1), ("start", 2), ("start", 3), ("start", 4), ("start", 5),
+        ("start", 1), ("start", 2), ("start", 3), ("start", 4), ("start", 5), ("start", 6),
         ("kiwipete", 1), ("kiwipete", 2), ("kiwipete", 3),
         ("position3", 1), ("position3", 2), ("position3", 3), ("position3", 4),
     ];
