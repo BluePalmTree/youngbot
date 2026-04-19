@@ -100,6 +100,12 @@ namespace chess_ui.ViewModels
         private ulong _checkSquares;
 
         [ObservableProperty]
+        private int _kingSquareWhite;
+
+        [ObservableProperty]
+        private int _kingSquareBlack;
+
+        [ObservableProperty]
         private bool _highlightAttackedSquares = false;
 
         [ObservableProperty]
@@ -107,6 +113,9 @@ namespace chess_ui.ViewModels
 
         [ObservableProperty]
         private bool _highlightCheckSquares = false;
+
+        [ObservableProperty]
+        private bool _highlightKingSquares = true;
 
         #endregion
 
@@ -118,15 +127,7 @@ namespace chess_ui.ViewModels
             var (b, m) = Board.FromStartPosition(StartPosition);
             _board = b;
             _legalMoves = m;
-            GameStatus = GameStatus.Playing;
-            CastlingRights = _board.CastlingRights;
-            EnPassantSquare = _board.EnPassantSquare;
-            FullMoveNumber = _board.FullMoveNumber;
-            HalfMoveClock = _board.HalfMoveClock;
-            GameStatesCount = _board.GameStates.Count;
-            AttackedSquares = _board.AttackData?.AttackMap ?? 0UL;
-            PinnedSquares = _board.AttackData is null ? 0 : BitUtils.OrListTogether(_board.AttackData.PinLines.Values);
-            CheckSquares = _board.AttackData?.CheckBlockMask ?? 0UL;
+            SetProperties();
 
             foreach (var sq in Squares)
             {
@@ -146,14 +147,7 @@ namespace chess_ui.ViewModels
             _board.UnmakeLastMove();
             _legalMoves = MoveGenerator.GenerateLegalMoves(_board);
             SyncFromBoard();
-            GameStatesCount = _board.GameStates.Count;
-            FullMoveNumber = _board.FullMoveNumber;
-            HalfMoveClock = _board.HalfMoveClock;
-            CastlingRights = _board.CastlingRights;
-            EnPassantSquare = _board.EnPassantSquare;
-            AttackedSquares = _board.AttackData?.AttackMap ?? 0UL;
-            PinnedSquares = _board.AttackData is null ? 0 : BitUtils.OrListTogether(_board.AttackData.PinLines.Values);
-            CheckSquares = _board.AttackData?.CheckBlockMask ?? 0UL;
+            SetProperties();
 
             foreach (var sq in Squares)
             {
@@ -268,14 +262,7 @@ namespace chess_ui.ViewModels
             _board.MakeMove(move, true);
             _legalMoves = MoveGenerator.GenerateLegalMoves(_board);
             SyncFromBoard();
-            GameStatesCount = _board.GameStates.Count;
-            FullMoveNumber = _board.FullMoveNumber;
-            HalfMoveClock = _board.HalfMoveClock;
-            CastlingRights = _board.CastlingRights;
-            EnPassantSquare = _board.EnPassantSquare;
-            AttackedSquares = _board.AttackData?.AttackMap ?? 0UL;
-            PinnedSquares = _board.AttackData is null ? 0 : BitUtils.OrListTogether(_board.AttackData.PinLines.Values);
-            CheckSquares = _board.AttackData?.CheckBlockMask ?? 0UL;
+            SetProperties();
 
             if (HalfMoveClock >= 50)
             {
@@ -312,6 +299,20 @@ namespace chess_ui.ViewModels
                 CompleteMove(move.Value);
 
             }, Avalonia.Threading.DispatcherPriority.Background);
+        }
+
+        private void SetProperties()
+        {
+            GameStatesCount = _board.GameStates.Count;
+            FullMoveNumber = _board.FullMoveNumber;
+            HalfMoveClock = _board.HalfMoveClock;
+            CastlingRights = _board.CastlingRights;
+            EnPassantSquare = _board.EnPassantSquare;
+            AttackedSquares = _board.AttackData?.AttackMap ?? 0UL;
+            PinnedSquares = _board.AttackData is null ? 0 : BitUtils.OrListTogether(_board.AttackData.PinLines.Values);
+            CheckSquares = _board.AttackData?.CheckBlockMask ?? 0UL;
+            KingSquareWhite = _board.KingSquareWhite;
+            KingSquareBlack = _board.KingSquareBlack;
         }
 
         private void SetGameOver()

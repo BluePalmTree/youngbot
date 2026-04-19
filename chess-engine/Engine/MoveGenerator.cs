@@ -212,7 +212,6 @@ namespace chess_engine.Engine
             return legalMoves;
         }
 
-
         public static List<Move> GenerateMoves(Board board)
         {
             var moves = new List<Move>();
@@ -224,30 +223,16 @@ namespace chess_engine.Engine
                 if (!Piece.IsColor(piece, board.ColorToMove))
                     continue;
 
-                if (Piece.IsSlidingPiece(piece))
-                {
-                    var slidingMoves = GenerateSlidingMoves(board, startSquare, piece);
-                    moves.AddRange(slidingMoves);
-                }
-                else if (Piece.TypeOf(piece) == Piece.King)
-                {
-                    var kingMoves = GenerateKingMoves(board, startSquare);
-                    moves.AddRange(kingMoves);
-                }
+                if (Piece.IsSlidingPiece(piece))                
+                    GenerateSlidingMoves(moves, board, startSquare, piece);
+                else if (Piece.TypeOf(piece) == Piece.King)                
+                    GenerateKingMoves(moves, board, startSquare);
                 else if (Piece.TypeOf(piece) == Piece.Knight)
-                {
-                    var knightMoves = GenerateKnightMoves(board, startSquare);
-                    moves.AddRange(knightMoves);
-                }
-                else if (Piece.TypeOf(piece) == Piece.Pawn)
-                {
-                    var pawnMoves = GeneratePawnMoves(board, startSquare);
-                    moves.AddRange(pawnMoves);
-                }
-                else
-                {
-                    throw new NotImplementedException("Piece type not implemented");
-                }
+                    GenerateKnightMoves(moves, board, startSquare);
+                else if (Piece.TypeOf(piece) == Piece.Pawn)                
+                    GeneratePawnMoves(moves, board, startSquare);
+                else                
+                    throw new NotImplementedException("Piece type not implemented");                
             }
 
             return moves;
@@ -274,10 +259,8 @@ namespace chess_engine.Engine
             return null;
         }
 
-        private static List<Move> GenerateKingMoves(Board board, int startSquare)
+        private static void GenerateKingMoves(List<Move> moves, Board board, int startSquare)
         {
-            var moves = new List<Move>();
-
             for (int directionIndex = 0; directionIndex < 8; directionIndex++)
             {
                 if (NumSquaresToEdge[startSquare][directionIndex] < 1)
@@ -337,14 +320,10 @@ namespace chess_engine.Engine
                     moves.Add(new Move(startSquare, targetSquare, MoveFlag.QueenSideCastle));
                 }
             }
-
-            return moves;
         }
 
-        private static List<Move> GenerateKnightMoves(Board board, int startSquare)
+        private static void GenerateKnightMoves(List<Move> moves, Board board, int startSquare)
         {
-            var moves = new List<Move>();
-
             for (int directionIndex = 0; directionIndex < 4; directionIndex++)
             {
                 // Needs at least 2 squares in the "main" direction
@@ -377,14 +356,10 @@ namespace chess_engine.Engine
                         continue;
                 }
             }
-
-            return moves;
         }
 
-        private static List<Move> GenerateSlidingMoves(Board board, int startSquare, int piece)
+        private static void GenerateSlidingMoves(List<Move> moves, Board board, int startSquare, int piece)
         {
-            var moves = new List<Move>();
-
             int startDirIndex = Piece.TypeOf(piece) == Piece.Bishop ? 4 : 0;
             int endDirIndex = Piece.TypeOf(piece) == Piece.Rook ? 4 : 8;
 
@@ -406,14 +381,10 @@ namespace chess_engine.Engine
                         break;
                 }
             }
-
-            return moves;
         }
 
-        private static List<Move> GeneratePawnMoves(Board board, int startSquare)
+        private static void GeneratePawnMoves(List<Move> moves, Board board, int startSquare)
         {
-            var moves = new List<Move>();
-
             var whiteIndex = Piece.IsColor(board.Squares[startSquare], Piece.White) ? 0 : 1;
 
             var north = NumSquaresToEdge[startSquare][NorthIndex + whiteIndex];
@@ -486,8 +457,6 @@ namespace chess_engine.Engine
                     AddPawnMove(moves, startSquare, targetSquare, MoveFlag.Normal);
                 }
             }
-
-            return moves;
         }
 
         // Emit a pawn move, expanding into the four concrete promotion variants when the
@@ -507,6 +476,7 @@ namespace chess_engine.Engine
                 moves.Add(new Move(from, to, baseFlag));
             }
         }
+
 
         // True when the pawn reaches the back rank and the move needs to promote.
         private static bool Prom(int targetSquare) => Board.RankOf(targetSquare) is 0 or 7;

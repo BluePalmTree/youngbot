@@ -24,6 +24,9 @@ namespace chess_engine.Models
         // Full-move number
         public int FullMoveNumber;
 
+        public int KingSquareWhite;
+        public int KingSquareBlack;
+
         public readonly Stack<GameState> GameStates;
 
         // Cached opponent-perspective attack data for the current side to move.
@@ -122,6 +125,9 @@ namespace chess_engine.Models
             MoveGenerator.PrecomputedMoveData();
             var moves = MoveGenerator.GenerateLegalMoves(board);
 
+            board.KingSquareWhite = board.GetKingSquare(Piece.White);
+            board.KingSquareBlack = board.GetKingSquare(Piece.Black);
+
             return (board, moves);
         }
 
@@ -143,12 +149,20 @@ namespace chess_engine.Models
 
             EnPassantSquare = -1;
 
-            int movePiece = Piece.TypeOf(Squares[move.From]);
+            int movedPiece = Piece.TypeOf(Squares[move.From]);
             var whiteMoved = ColorToMove == Piece.White;
+
+            if (movedPiece == Piece.King)
+            {
+                if (whiteMoved)
+                    KingSquareWhite = move.To;
+                else
+                    KingSquareBlack = move.To;
+            }
 
             // Reset on capture or pawn move, otherwise increment
             bool isCapture = gs.CapturedPiece != Piece.None || move.Flag == MoveFlag.EnPassant;
-            bool isPawnMove = movePiece == Piece.Pawn;
+            bool isPawnMove = movedPiece == Piece.Pawn;
 
             if (isCapture || isPawnMove)
                 HalfMoveClock = 0;
@@ -156,13 +170,13 @@ namespace chess_engine.Models
                 HalfMoveClock++;
 
             // Update castling rights
-            if (CastlingRights > 0 && (movePiece == Piece.King || movePiece == Piece.Rook))
+            if (CastlingRights > 0 && (movedPiece == Piece.King || movedPiece == Piece.Rook))
             {
                 var kingRights = whiteMoved ? 0b0011 : 0b1100;
                 var kingSideRights = whiteMoved ? 0b0111 : 0b1101;
                 var queenSideRights = whiteMoved ? 0b1011 : 0b1110;
 
-                if (movePiece == Piece.King)
+                if (movedPiece == Piece.King)
                 {
                     CastlingRights &= kingRights;
                 }
@@ -282,6 +296,15 @@ namespace chess_engine.Models
                     Squares[gameState.EnPassantCaptureSquare] = Piece.Pawn | Piece.Black;
                 else
                     Squares[gameState.EnPassantCaptureSquare] = Piece.Pawn | Piece.White;
+            }
+
+            // Reset king square
+            if (Piece.TypeOf(move.To) == Piece.King)
+            {
+                if (ColorToMove == Piece.Black)
+                    KingSquareWhite = move.To;
+                else
+                    KingSquareBlack = move.To;
             }
         }
 

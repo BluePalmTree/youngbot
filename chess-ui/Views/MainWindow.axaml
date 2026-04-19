@@ -26,6 +26,7 @@
         <converters:IsNotPlayingConverter x:Key="IsNotPlayingConverter" />
         <converters:IsInCollectionConverter x:Key="IsInCollectionConverter" />
         <converters:BitWiseAndConvertMulti x:Key="BitWiseAndConvertMulti" />
+        <converters:NumbersEqualConverterMulti x:Key="NumbersEqualConverterMulti" />
     </Window.Resources>
 
     <Design.DataContext>
@@ -134,6 +135,10 @@
                 <MenuItem
                     Header="Highlight check Squares"
                     IsChecked="{Binding HighlightCheckSquares, Mode=TwoWay}"
+                    ToggleType="CheckBox" />
+                    <MenuItem
+                    Header="Highlight king Squares"
+                    IsChecked="{Binding HighlightKingSquares, Mode=TwoWay}"
                     ToggleType="CheckBox" />
             </MenuItem>
         </Menu>
@@ -250,6 +255,32 @@
                                                 <MultiBinding Converter="{StaticResource BitWiseAndConvertMulti}">
                                                     <Binding Path="EngineIndex" />
                                                     <Binding Path="$parent[ItemsControl].((vm:BoardViewModel)DataContext).PinnedSquares" />
+                                                </MultiBinding>
+                                            </Border.IsVisible>
+                                        </Border>
+                                    </Grid>
+                                    <Grid IsVisible="{Binding $parent[ItemsControl].((vm:BoardViewModel)DataContext).HighlightKingSquares}">
+                                        <Border
+                                            Background="#170b0b"
+                                            IsHitTestVisible="False"
+                                            Opacity="0.85">
+                                            <Border.IsVisible>
+                                                <MultiBinding Converter="{StaticResource NumbersEqualConverterMulti}">
+                                                    <Binding Path="EngineIndex" />
+                                                    <Binding Path="$parent[ItemsControl].((vm:BoardViewModel)DataContext).KingSquareBlack" />
+                                                </MultiBinding>
+                                            </Border.IsVisible>
+                                        </Border>
+                                    </Grid>
+                                    <Grid IsVisible="{Binding $parent[ItemsControl].((vm:BoardViewModel)DataContext).HighlightKingSquares}">
+                                        <Border
+                                            Background="#b6b2b2"
+                                            IsHitTestVisible="False"
+                                            Opacity="0.85">
+                                            <Border.IsVisible>
+                                                <MultiBinding Converter="{StaticResource NumbersEqualConverterMulti}">
+                                                    <Binding Path="EngineIndex" />
+                                                    <Binding Path="$parent[ItemsControl].((vm:BoardViewModel)DataContext).KingSquareWhite" />
                                                 </MultiBinding>
                                             </Border.IsVisible>
                                         </Border>
