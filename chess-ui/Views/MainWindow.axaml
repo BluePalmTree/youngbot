@@ -36,7 +36,8 @@
         -->
         <vm:BoardViewModel />
     </Design.DataContext>
-    <DockPanel>
+    <Panel>
+        <DockPanel>
         <Menu DockPanel.Dock="Top">
             <MenuItem Header="Game">
                 <MenuItem Command="{Binding NewGameCommand}" Header="_New Game" />
@@ -391,5 +392,7 @@
                 </Border>
             </Panel>
         </Panel>
-    </DockPanel>
+        </DockPanel>
+        <Canvas x:Name="GhostLayer" IsHitTestVisible="False" />
+    </Panel>
 </Window>

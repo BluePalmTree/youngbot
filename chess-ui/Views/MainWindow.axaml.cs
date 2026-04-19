@@ -3,7 +3,6 @@ using System.Diagnostics;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Presenters;
-using Avalonia.Controls.Primitives;
 using Avalonia.Input;
 using Avalonia.Layout;
 using Avalonia.Media.Imaging;
@@ -66,8 +65,7 @@ namespace chess_ui.Views
 
         // ── drag state ────────────────────────────────────────────────
         private SquareViewModel? _dragSource;
-        private Image? _ghost; // the floating image
-        private Canvas? _adornerCanvas; // lives in AdornerLayer
+        private Image? _ghost; // the floating image, parented to GhostLayer in XAML
         private Point _grabOffset; // cursor offset within the piece
         private Point _pressPosition; // where the mouse went down
         private bool _dragging; // true once threshol is crossed
@@ -132,15 +130,7 @@ namespace chess_ui.Views
                     VerticalAlignment = VerticalAlignment.Top,
                 };
 
-                var boardControl = this.FindControl<ItemsControl>("BoardItems");
-                var layer = AdornerLayer.GetAdornerLayer(boardControl!);
-                if (layer is not null)
-                {
-                    _adornerCanvas = new Canvas { IsHitTestVisible = false };
-                    _adornerCanvas.Children.Add(_ghost);
-                    AdornerLayer.SetAdornedElement(_adornerCanvas, this);
-                    layer.Children.Add(_adornerCanvas);
-                }
+                GhostLayer.Children.Add(_ghost);
 
                 _grabOffset = new Point(32, 32);
             }
@@ -179,7 +169,7 @@ namespace chess_ui.Views
         // ── Helpers ───────────────────────────────────────────────────
         private void MoveGhost(Point windowPos)
         {
-            if (_ghost is null || _adornerCanvas is null) return;
+            if (_ghost is null) return;
 
             Canvas.SetLeft(_ghost, windowPos.X - _grabOffset.X);
             Canvas.SetTop(_ghost, windowPos.Y - _grabOffset.Y);
@@ -187,13 +177,9 @@ namespace chess_ui.Views
 
         private void RemoveGhost()
         {
-            if (_adornerCanvas is null) return;
+            if (_ghost is null) return;
 
-            var boardControl = this.FindControl<ItemsControl>("BoardItems");
-            var layer = AdornerLayer.GetAdornerLayer(boardControl!);
-            layer?.Children.Remove(_adornerCanvas);
-
-            _adornerCanvas = null;
+            GhostLayer.Children.Remove(_ghost);
             _ghost = null;
         }
 
