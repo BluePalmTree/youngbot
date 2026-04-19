@@ -52,3 +52,16 @@ Each row is one `--record`ed perft run. The commit column carries `-dirty` when 
 | 2026-04-19 | 74a2c00-dirty | position3 | 2 | 191 | 0.1 | 3,447,653 | Release | OK |
 | 2026-04-19 | 74a2c00-dirty | position3 | 3 | 2,812 | 0.4 | 7,504,670 | Release | OK |
 | 2026-04-19 | 74a2c00-dirty | position3 | 4 | 43,238 | 6.5 | 6,663,892 | Release | OK |
+| 2026-04-19 | f599b55 | start | 1 | 20 | 12.8 | 1,567 | Release | OK |
+| 2026-04-19 | f599b55 | start | 2 | 400 | 0.4 | 903,138 | Release | OK |
+| 2026-04-19 | f599b55 | start | 3 | 8,902 | 7.7 | 1,161,852 | Release | OK |
+| 2026-04-19 | f599b55 | start | 4 | 197,281 | 115.8 | 1,703,150 | Release | OK |
+| 2026-04-19 | f599b55 | start | 5 | 4,865,609 | 506.2 | 9,611,905 | Release | OK |
+| 2026-04-19 | f599b55 | start | 6 | 119,060,324 | 8606.3 | 13,834,117 | Release | OK |
+| 2026-04-19 | f599b55 | kiwipete | 1 | 48 | 0.2 | 301,886 | Release | OK |
+| 2026-04-19 | f599b55 | kiwipete | 2 | 2,039 | 0.3 | 7,444,322 | Release | OK |
+| 2026-04-19 | f599b55 | kiwipete | 3 | 97,862 | 7.0 | 13,964,127 | Release | OK |
+| 2026-04-19 | f599b55 | position3 | 1 | 14 | 0.0 | 398,860 | Release | OK |
+| 2026-04-19 | f599b55 | position3 | 2 | 191 | 0.1 | 3,673,076 | Release | OK |
+| 2026-04-19 | f599b55 | position3 | 3 | 2,812 | 0.3 | 10,933,125 | Release | OK |
+| 2026-04-19 | f599b55 | position3 | 4 | 43,238 | 3.9 | 11,180,699 | Release | OK |
