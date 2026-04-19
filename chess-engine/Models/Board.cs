@@ -333,7 +333,7 @@ namespace chess_engine.Models
             return $"{(char)('a' + file)}{rank}";
         }
 
-
+        // TODO: Only use for initialisation for everything else use the properies
         public int GetKingSquare(int color)
         {
             for (int i = 0; i < 64; i++)
