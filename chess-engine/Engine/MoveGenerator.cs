@@ -11,7 +11,7 @@ namespace chess_engine.Engine
         public static readonly int[] DirectionOffsets = [8, -8, -1, 1, 7, -7, 9, -9];
         public static readonly int[][] NumSquaresToEdge = new int[64][];
 
-        public static List<Move> Moves { get; private set; } = [];
+        //public static List<Move> Moves { get; private set; } = [];
 
 
         private static readonly int NorthIndex = 0;
@@ -52,7 +52,7 @@ namespace chess_engine.Engine
         //   1. Precompute opponent attack map, checkers, check-block mask, pin lines.
         //   2. Generate pseudo-legal moves.
         //   3. Filter each move inline against those structures — no make/unmake.
-        public static void GenerateLegalMoves(Board board)
+        public static List<Move> GenerateLegalMoves(Board board)
         {
             var data = AttackData.Compute(board, board.ColorToMove);
             board.AttackData = data;
@@ -71,7 +71,7 @@ namespace chess_engine.Engine
             if (legalMoves.Count == 0)
                 Debug.WriteLine($"No legal moves for {Piece.GetColorText(board.ColorToMove)} left.");
 
-            Moves = legalMoves;
+            return legalMoves;
         }
 
         private static bool IsLegal(Board board, AttackData data, Move move, int ownKing)
@@ -82,7 +82,8 @@ namespace chess_engine.Engine
                 return IsLegalKingMove(data, move);
 
             // Only king moves can escape a double check.
-            if (data.InDoubleCheck) return false;
+            if (data.InDoubleCheck) 
+                return false;
 
             // Under single check: non-king move must land on a blocking or capturing square.
             if (data.CheckBlockMask != null && (data.CheckBlockMask & (1UL << move.To)) == 0)
@@ -131,7 +132,8 @@ namespace chess_engine.Engine
             int capturedPawnSq = whiteMoving ? move.To - 8 : move.To + 8;
 
             int kingRank = Board.RankOf(kingSq);
-            if (Board.RankOf(move.From) != kingRank) return false;
+            if (Board.RankOf(move.From) != kingRank) 
+                return false;
 
             int opponent = whiteMoving ? Piece.Black : Piece.White;
 
@@ -147,25 +149,30 @@ namespace chess_engine.Engine
                     if (dir == +1 && file == 7) break;
                     sq += dir;
 
-                    if (sq == move.From || sq == capturedPawnSq) continue;
+                    if (sq == move.From || sq == capturedPawnSq) 
+                        continue;
 
                     int piece = board.Squares[sq];
-                    if (piece == Piece.None) continue;
+                    if (piece == Piece.None) 
+                        continue;
 
                     if (Piece.IsColor(piece, opponent))
                     {
                         int type = Piece.TypeOf(piece);
-                        if (type == Piece.Rook || type == Piece.Queen) return true;
+                        if (type == Piece.Rook || type == Piece.Queen) 
+                            return true;
                     }
+
                     break;
                 }
             }
+
             return false;
         }
 
         // Slow reference legal-move generator. Kept as an A/B oracle against the fast
         // path — perft disagreements are easiest to narrow down by replaying against this.
-        public static void GenerateLegalMovesOracle(Board board)
+        public static List<Move> GenerateLegalMovesOracle(Board board)
         {
             Stopwatch sw = new();
             sw.Start();
@@ -177,9 +184,8 @@ namespace chess_engine.Engine
             var kingSquare = board.GetKingSquare(board.ColorToMove);
             if (kingSquare == -1)
             {
-                Moves = legalMoves;
                 Debug.WriteLine($"No king found for {(board.ColorToMove == Piece.White ? "White" : "Black")} | FEN: {board.GetFEN()}");
-                return;
+                return legalMoves;
             }
 
             foreach (var moveToVerify in pseudoLegalMoves)
@@ -203,7 +209,7 @@ namespace chess_engine.Engine
             if (legalMoves.Count == 0)
                 Debug.WriteLine($"No legal moves for {(board.ColorToMove == Piece.White ? "White" : "Black")} left. Checkmate!");
 
-            Moves = legalMoves;
+            return legalMoves;
         }
 
 
@@ -247,30 +253,25 @@ namespace chess_engine.Engine
             return moves;
         }
 
-        public static int[] GetValidMovesForSquare(int square)
+        public static int[] GetValidMovesForSquare(List<Move> moves, int square)
         {
             var result = new List<int>();
-            for (int i = 0; i < Moves.Count; i++)
+            for (int i = 0; i < moves.Count; i++)
             {
-                if (Moves[i].From == square)
-                    result.Add(Moves[i].To);
+                if (moves[i].From == square)
+                    result.Add(moves[i].To);
             }
 
             return result.ToArray();
         }
 
-        public static Move? GetMove(int from, int to)
+        public static Move? GetMove(List<Move> moves, int from, int to)
         {
-            foreach (var move in Moves)
+            foreach (var move in moves)
                 if (move.From == from && move.To == to)
                     return move;
 
             return null;
-        }
-
-        public static bool IsValidMove(int from, int to)
-        {
-            return GetMove(from, to) is not null;
         }
 
         private static List<Move> GenerateKingMoves(Board board, int startSquare)

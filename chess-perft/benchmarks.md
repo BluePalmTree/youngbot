@@ -39,3 +39,16 @@ Each row is one `--record`ed perft run. The commit column carries `-dirty` when 
 | 2026-04-18 | 32d8614-dirty | position3        | 2     | 191         | 0.1       | 1,786,716  | Release | OK       |
 | 2026-04-18 | 32d8614-dirty | position3        | 3     | 2,812       | 0.5       | 5,287,702  | Release | OK       |
 | 2026-04-18 | 32d8614-dirty | position3        | 4     | 43,238      | 8.2       | 5,241,922  | Release | OK       |
+| 2026-04-19 | 74a2c00-dirty | start | 1 | 20 | 20.5 | 976 | Release | OK |
+| 2026-04-19 | 74a2c00-dirty | start | 2 | 400 | 0.6 | 673,400 | Release | OK |
+| 2026-04-19 | 74a2c00-dirty | start | 3 | 8,902 | 7.9 | 1,127,791 | Release | OK |
+| 2026-04-19 | 74a2c00-dirty | start | 4 | 197,281 | 156.7 | 1,259,008 | Release | OK |
+| 2026-04-19 | 74a2c00-dirty | start | 5 | 4,865,609 | 569.6 | 8,542,704 | Release | OK |
+| 2026-04-19 | 74a2c00-dirty | start | 6 | 119,060,324 | 11540.9 | 10,316,337 | Release | OK |
+| 2026-04-19 | 74a2c00-dirty | kiwipete | 1 | 48 | 0.1 | 364,741 | Release | OK |
+| 2026-04-19 | 74a2c00-dirty | kiwipete | 2 | 2,039 | 0.5 | 4,211,939 | Release | OK |
+| 2026-04-19 | 74a2c00-dirty | kiwipete | 3 | 97,862 | 9.3 | 10,561,065 | Release | OK |
+| 2026-04-19 | 74a2c00-dirty | position3 | 1 | 14 | 0.0 | 465,116 | Release | OK |
+| 2026-04-19 | 74a2c00-dirty | position3 | 2 | 191 | 0.1 | 3,447,653 | Release | OK |
+| 2026-04-19 | 74a2c00-dirty | position3 | 3 | 2,812 | 0.4 | 7,504,670 | Release | OK |
+| 2026-04-19 | 74a2c00-dirty | position3 | 4 | 43,238 | 6.5 | 6,663,892 | Release | OK |

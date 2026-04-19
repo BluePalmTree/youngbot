@@ -46,16 +46,15 @@ namespace chess_engine.Engine
 
         public static PerftResult Divide(string positionKey, string fen, int depth, bool useOracle = false)
         {
-            var board = Board.FromStartPosition(fen);
+            var (board, _) = Board.FromStartPosition(fen);
 
-            Action<Board> gen = useOracle ? MoveGenerator.GenerateLegalMovesOracle : MoveGenerator.GenerateLegalMoves;
+            Func<Board, List<Move>> gen = useOracle ? MoveGenerator.GenerateLegalMovesOracle : MoveGenerator.GenerateLegalMoves;
 
             // positionKey is the lookup key ("start", "kiwipete", "position3", "custom").
             // Display label prepends "ORACLE" in oracle mode so the output line makes that visible.
             string label = useOracle ? $"ORACLE {positionKey}" : positionKey;
-
-            gen(board);
-            var moves = new List<Move>(MoveGenerator.Moves);
+            
+            var moves = gen(board);
             long total = 0;
 
             Stopwatch sw = new();
@@ -125,13 +124,14 @@ namespace chess_engine.Engine
         {
             if (depth == 0)
                 return 1;
+            
+            List<Move> moves;
 
             if (useOracle)
-                MoveGenerator.GenerateLegalMovesOracle(board);
+                moves = MoveGenerator.GenerateLegalMovesOracle(board);
             else
-                MoveGenerator.GenerateLegalMoves(board);
+                moves = MoveGenerator.GenerateLegalMoves(board);
 
-            var moves = new List<Move>(MoveGenerator.Moves);
             long nodes = 0;
 
             foreach (var move in moves)

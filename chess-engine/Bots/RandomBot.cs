@@ -1,4 +1,3 @@
-using chess_engine.Engine;
 using chess_engine.Models;
 
 namespace chess_engine.Bots
@@ -7,9 +6,8 @@ namespace chess_engine.Bots
     {
         private static readonly Random rng = new();
 
-        public static Move? PickMove()
-        {
-            var moves = MoveGenerator.Moves;
+        public static Move? PickMove(List<Move> moves)
+        {            
             if (moves.Count == 0)
                 return null;
 

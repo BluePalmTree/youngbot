@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Linq;
@@ -22,6 +23,7 @@ namespace chess_ui.ViewModels
         private const byte BoardSize = 8;
         private Board _board;
         private Move? _pendingPromotionMove;
+        private List<Move> _legalMoves;
 
         public string[] Ranks { get; } // rows        
         public string[] Files { get; } // columns
@@ -47,6 +49,7 @@ namespace chess_ui.ViewModels
             }
             Squares = new ObservableCollection<SquareViewModel>(sq);
             _board = new Board();
+            _legalMoves = [];
             AttackedSquares = 0UL;
             PinnedSquares = 0UL;
             CheckSquares = 0UL;
@@ -112,7 +115,9 @@ namespace chess_ui.ViewModels
         [RelayCommand]
         private void NewGame()
         {
-            _board = Board.FromStartPosition(StartPosition);
+            var (b, m) = Board.FromStartPosition(StartPosition);
+            _board = b;
+            _legalMoves = m;
             GameStatus = GameStatus.Playing;
             CastlingRights = _board.CastlingRights;
             EnPassantSquare = _board.EnPassantSquare;
@@ -139,7 +144,7 @@ namespace chess_ui.ViewModels
         private void UndoMove()
         {
             _board.UnmakeLastMove();
-            MoveGenerator.GenerateLegalMoves(_board);
+            _legalMoves = MoveGenerator.GenerateLegalMoves(_board);
             SyncFromBoard();
             GameStatesCount = _board.GameStates.Count;
             FullMoveNumber = _board.FullMoveNumber;
@@ -192,9 +197,8 @@ namespace chess_ui.ViewModels
             var square = Squares[index];
             square.IsSelected = true;
 
-
-            int[] movesForSquare = MoveGenerator.GetValidMovesForSquare(square.EngineIndex);
-            //Debug.WriteLine($"Moves for selected square: {string.Join(", ", movesForSquare)}");
+            int[] movesForSquare = MoveGenerator.GetValidMovesForSquare(_legalMoves, square.EngineIndex);
+            
             for (int i = 0; i < 64; i++)
             {
                 Squares[Board.ToUiIndex(i)].IsValidMoveTarget = false;
@@ -209,7 +213,7 @@ namespace chess_ui.ViewModels
             int engineFrom = Board.ToEngineIndex(fromIndex);
             int engineTo = Board.ToEngineIndex(toIndex);
 
-            var move = MoveGenerator.GetMove(engineFrom, engineTo);
+            var move = MoveGenerator.GetMove(_legalMoves, engineFrom, engineTo);
             if (!move.HasValue)
                 return false;
 
@@ -262,7 +266,7 @@ namespace chess_ui.ViewModels
             to.IsHighlighted = true;
 
             _board.MakeMove(move, true);
-            MoveGenerator.GenerateLegalMoves(_board);
+            _legalMoves = MoveGenerator.GenerateLegalMoves(_board);
             SyncFromBoard();
             GameStatesCount = _board.GameStates.Count;
             FullMoveNumber = _board.FullMoveNumber;
@@ -295,7 +299,7 @@ namespace chess_ui.ViewModels
 
             Avalonia.Threading.Dispatcher.UIThread.Post(() =>
             {
-                var move = RandomBot.PickMove();
+                var move = RandomBot.PickMove(_legalMoves);
 
                 if (move is null)
                 {

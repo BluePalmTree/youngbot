@@ -10,7 +10,7 @@ This doc is a checklist of what to clean up *before* writing the search, in the 
 
 ### Pre-search hygiene (items 1–5)
 
-- [ ] **1. Remove `MoveGenerator.Moves` (the static list).**
+- [x] **1. Remove `MoveGenerator.Moves` (the static list).**
   A recursive search at depth N will overwrite the list while depth N−1 is still iterating it. That's a correctness bug, not a perf nit — and it will only surface as mysteriously wrong play, not a crash. Make `GenerateLegalMoves` *return* a `List<Move>` (or fill a caller-owned buffer). The UI helpers `GetValidMovesForSquare` / `GetMove` / `IsValidMove` become thin wrappers that the view model calls with its own cached list.
 
 - [ ] **2. Buffer-based move generation.**

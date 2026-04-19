@@ -43,7 +43,7 @@ namespace chess_engine.Models
             GameStates = [];
         }
 
-        public static Board FromStartPosition(string fen)
+        public static (Board board, List<Move> moves) FromStartPosition(string fen)
         {
             // https://de.wikipedia.org/wiki/Forsyth-Edwards-Notation
 
@@ -120,9 +120,9 @@ namespace chess_engine.Models
                 board.FullMoveNumber = fmn;
 
             MoveGenerator.PrecomputedMoveData();
-            MoveGenerator.GenerateLegalMoves(board);
+            var moves = MoveGenerator.GenerateLegalMoves(board);
 
-            return board;
+            return (board, moves);
         }
 
         public void MakeMove(Move move, bool uiMove = false)

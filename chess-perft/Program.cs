@@ -7,7 +7,7 @@ namespace chess_perft;
 // Headless perft runner.
 //
 // Usage:
-//   dotnet run --project chess-perft                         # default suite
+//   dotnet run --project chess-perft --configuration:Release # default suite
 //   dotnet run --project chess-perft -- start 5 kiwipete 3   # specific positions
 //   dotnet run --project chess-perft -- --fen "<FEN>" <depth> [--oracle]
 //
@@ -46,7 +46,7 @@ internal class Program
         // Cheap (<1 ms) but covers the hot paths in MoveGenerator and AttackData.
         if (record)
         {
-            var warmup = chess_engine.Models.Board.FromStartPosition(Positions["start"]);
+            var (warmup,_) = chess_engine.Models.Board.FromStartPosition(Positions["start"]);
             Perft.Run(warmup, 2);
         }
 
