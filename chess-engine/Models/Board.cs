@@ -122,12 +122,12 @@ namespace chess_engine.Models
             if (tokens.Length > 5 && int.TryParse(tokens[5], out int fmn))
                 board.FullMoveNumber = fmn;
 
-            MoveGenerator.PrecomputedMoveData();
-            var moves = MoveGenerator.GenerateLegalMoves(board);
-
             board.KingSquareWhite = board.GetKingSquare(Piece.White);
             board.KingSquareBlack = board.GetKingSquare(Piece.Black);
 
+            MoveGenerator.PrecomputedMoveData();
+            var moves = MoveGenerator.GenerateLegalMoves(board);
+            
             return (board, moves);
         }
 
@@ -299,12 +299,12 @@ namespace chess_engine.Models
             }
 
             // Reset king square
-            if (Piece.TypeOf(move.To) == Piece.King)
+            if (Piece.TypeOf(Squares[move.From]) == Piece.King)
             {
-                if (ColorToMove == Piece.Black)
-                    KingSquareWhite = move.To;
+                if (ColorToMove == Piece.White)
+                    KingSquareWhite = move.From;
                 else
-                    KingSquareBlack = move.To;
+                    KingSquareBlack = move.From;
             }
         }
 
@@ -332,8 +332,7 @@ namespace chess_engine.Models
             var file = FileOf(engineIndex);
             return $"{(char)('a' + file)}{rank}";
         }
-
-        // TODO: Only use for initialisation for everything else use the properies
+        
         public int GetKingSquare(int color)
         {
             for (int i = 0; i < 64; i++)
@@ -350,9 +349,7 @@ namespace chess_engine.Models
 
         public bool IsInCheck()
         {
-            int kingSquare = GetKingSquare(ColorToMove);
-            if (kingSquare == -1)
-                return false;
+            int kingSquare = ColorToMove == Piece.White ? KingSquareWhite : KingSquareBlack;            
 
             // Fast path: cached AttackData is valid for the current side to move.
             var data = AttackData ?? Engine.AttackData.Compute(this, ColorToMove);

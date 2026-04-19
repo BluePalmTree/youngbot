@@ -5,6 +5,8 @@ namespace chess_engine.Engine
 {
     public static class MoveGenerator
     {
+        private static readonly bool d = true;
+
         // Direction ordering (shared with AttackData): indices 0..7 map to
         //   N(+8), S(-8), W(-1), E(+1), NW(+7), SE(-7), NE(+9), SW(-9)
         // Orthogonal directions are indices 0..3; diagonals are 4..7.
@@ -57,8 +59,8 @@ namespace chess_engine.Engine
             var data = AttackData.Compute(board, board.ColorToMove);
             board.AttackData = data;
 
-            int ownKing = board.GetKingSquare(board.ColorToMove);
-
+            int ownKing = board.ColorToMove == Piece.White ? board.KingSquareWhite : board.KingSquareBlack;
+            
             var legalMoves = new List<Move>();
             var pseudoLegal = GenerateMoves(board);
 
@@ -181,21 +183,14 @@ namespace chess_engine.Engine
             List<Move> legalMoves = [];
 
             var orgColorToMove = board.ColorToMove;
-            var kingSquare = board.GetKingSquare(board.ColorToMove);
-            if (kingSquare == -1)
-            {
-                Debug.WriteLine($"No king found for {(board.ColorToMove == Piece.White ? "White" : "Black")} | FEN: {board.GetFEN()}");
-                return legalMoves;
-            }
+            var kingSquare = board.ColorToMove == Piece.White ? board.KingSquareWhite : board.KingSquareBlack;            
 
             foreach (var moveToVerify in pseudoLegalMoves)
             {
                 board.MakeMove(moveToVerify);
 
-                kingSquare = board.GetKingSquare(orgColorToMove);
-                if (kingSquare == -1)
-                    Debug.WriteLine($"FEN: {board.GetFEN()}");
-
+                kingSquare = orgColorToMove == Piece.White ? board.KingSquareWhite : board.KingSquareBlack;;
+                
                 List<Move> opponentResponses = GenerateMoves(board);
 
                 if (!opponentResponses.Any(r => r.To == kingSquare))

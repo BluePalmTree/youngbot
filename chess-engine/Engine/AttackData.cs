@@ -36,8 +36,8 @@ namespace chess_engine.Engine
         {
             var data = new AttackData();
             int opponent = ownColor == Piece.White ? Piece.Black : Piece.White;
-            int ownKing = board.GetKingSquare(ownColor);
-
+            int ownKing = ownColor == Piece.White ? board.KingSquareWhite : board.KingSquareBlack;
+                        
             if (d) Debug.WriteLine($"Computing attack data for {Piece.GetColorText(opponent)}");
 
             for (int square = 0; square < 64; square++)

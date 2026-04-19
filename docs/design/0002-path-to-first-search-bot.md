@@ -16,7 +16,7 @@ This doc is a checklist of what to clean up *before* writing the search, in the 
 - [x] **2. Buffer-based move generation.**
   `GenerateMoves` currently allocates ~8 `List<Move>` per call (one per piece type plus the outer list). At 10⁶ nodes/s that's tens of millions of GC allocations per search. After (1), thread a `List<Move>` (or `Span<Move>` + count) through `GenerateMoves` / `GenerateKingMoves` / etc. and append into it instead of returning fresh lists. Small diff once (1) is done.
 
-- [ ] **3. Cache king squares on the `Board`.**
+- [x] **3. Cache king squares on the `Board`.**
   `GetKingSquare` scans all 64 squares; it's called by `IsInCheck` and `GenerateLegalMoves`, i.e. every node of the search. Store `WhiteKingSquare` / `BlackKingSquare` as fields, update them in `MakeMove` / `UnmakeMove` whenever a king (or castling rook) moves. Tiny diff, big hot-path win. Worth doing before search so the first profile run isn't polluted by it.
 
 - [ ] **4. One `GameResult` API on `Board`.**
