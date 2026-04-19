@@ -14,3 +14,4 @@ This folder holds Architecture Decision Records (ADRs) — short write-ups of no
 ## Index
 
 - [0001 — Fast legal move generation](0001-fast-legal-move-generation.md)
+- [0002 — Path to the first search-based bot](0002-path-to-first-search-bot.md)

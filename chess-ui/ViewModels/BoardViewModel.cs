@@ -14,8 +14,8 @@ namespace chess_ui.ViewModels
 {
     public partial class BoardViewModel : ViewModelBase
     {
-        //private const string StartPosition = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"; // default
-        private const string StartPosition = "r3k3/1p3p2/p2q2p1/bn3P2/1N2PQP1/PB6/3K1R1r/3R4 w - - 0 1"; // seb
+        private const string StartPosition = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"; // default
+        //private const string StartPosition = "r3k3/1p3p2/p2q2p1/bn3P2/1N2PQP1/PB6/3K1R1r/3R4 w - - 0 1"; // seb
 
 
 
@@ -82,7 +82,7 @@ namespace chess_ui.ViewModels
         private string _gameOverMessage = string.Empty;
 
         [ObservableProperty]
-        private bool _isBlackBot = false;
+        private bool _isBlackBot = true;
 
         [ObservableProperty]
         private bool _isWhiteBot;
