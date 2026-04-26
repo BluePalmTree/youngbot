@@ -1,7 +1,7 @@
 using System;
 using System.Globalization;
 using Avalonia.Data.Converters;
-using chess_engine.Models;
+using chess_engine.Enums;
 
 namespace chess_ui.Converters
 {

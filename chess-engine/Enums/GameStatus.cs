@@ -1,4 +1,4 @@
-namespace chess_engine.Models
+namespace chess_engine.Enums
 {
     public enum GameStatus
     {

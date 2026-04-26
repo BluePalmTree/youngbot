@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using System.Text;
 using chess_engine.Engine;
+using chess_engine.Enums;
 
 namespace chess_engine.Models
 {
@@ -127,7 +128,7 @@ namespace chess_engine.Models
 
             MoveGenerator.PrecomputedMoveData();
             var moves = MoveGenerator.GenerateLegalMoves(board);
-            
+
             return (board, moves);
         }
 
@@ -255,7 +256,7 @@ namespace chess_engine.Models
             UnmakeMove(gs.Move, gs);
         }
 
-        public void UnmakeMove(Move move, GameState gameState)
+        private void UnmakeMove(Move move, GameState gameState)
         {
             AttackData = null;
 
@@ -332,7 +333,8 @@ namespace chess_engine.Models
             var file = FileOf(engineIndex);
             return $"{(char)('a' + file)}{rank}";
         }
-        
+
+        // Helpers
         public int GetKingSquare(int color)
         {
             for (int i = 0; i < 64; i++)
@@ -347,9 +349,35 @@ namespace chess_engine.Models
             return -1;
         }
 
+        public GameResult GetResult(int legalMovesCount)
+        {
+            // Contract: caller has just run MoveGenerator.GenerateLegalMoves on this
+            // position, so AttackData is populated. Null here is a programmer error.
+            bool inCheck = AttackData!.InCheck;
+
+            if (legalMovesCount == 0)
+            {
+                // No legal moves: checkmate iff in check, stalemate otherwise. No third case.
+                if (inCheck)
+                    return ColorToMove == Piece.White ? GameResult.BlackWins : GameResult.WhiteWins;
+                return GameResult.Draw;
+            }
+
+            if (HalfMoveClock >= 100)
+                return GameResult.Draw;
+
+            // TODO: threefold repetition — needs Zobrist hashing + position-history stack.
+            // Deferred to its own ADR (docs/design/NNNN-zobrist-and-repetition.md).
+
+            if (IsTechnicalDraw())
+                return GameResult.Draw;
+
+            return GameResult.Ongoing;
+        }
+
         public bool IsInCheck()
         {
-            int kingSquare = ColorToMove == Piece.White ? KingSquareWhite : KingSquareBlack;            
+            int kingSquare = ColorToMove == Piece.White ? KingSquareWhite : KingSquareBlack;
 
             // Fast path: cached AttackData is valid for the current side to move.
             var data = AttackData ?? Engine.AttackData.Compute(this, ColorToMove);
@@ -500,6 +528,52 @@ namespace chess_engine.Models
         public string GetGameState()
         {
             return string.Join(", ", GameStates.Select(x => x.Move));
+        }
+
+        private bool IsTechnicalDraw()
+        {
+            int[] whitePieces = new int[2];
+            int[] blackPieces = new int[2];
+            int w = 0; 
+            int b = 0;
+
+            for (int i = 0; i < 64; i++)
+            {
+                if (Piece.TypeOf(Squares[i]) == Piece.None)
+                    continue;
+
+                if (Piece.IsColor(Squares[i], Piece.White))
+                {
+                    if (Piece.TypeOf(Squares[i]) == Piece.King)
+                        whitePieces[0] = Squares[i];
+                    else
+                        whitePieces[1] = Squares[i];
+                    w++;
+                }
+                else 
+                {
+                    if (Piece.TypeOf(Squares[i]) == Piece.King)
+                        blackPieces[0] = Squares[i];
+                    else
+                        blackPieces[1] = Squares[i];
+                    b++;
+                }
+
+                if (w > 1 || b > 1)
+                    return false;
+            }
+
+            var wp1type = Piece.TypeOf(whitePieces[1]);
+            var bp1type = Piece.TypeOf(blackPieces[1]);
+
+            if (wp1type == Piece.None && bp1type == Piece.None)
+                return true;
+            else if (wp1type == Piece.None && (bp1type == Piece.Bishop || bp1type == Piece.Knight))
+                return true;
+            else if ((wp1type == Piece.Bishop || wp1type == Piece.Knight) && bp1type == Piece.None)
+                return true;
+
+            return false;            
         }
     }
 }

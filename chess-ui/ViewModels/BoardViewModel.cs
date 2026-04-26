@@ -5,6 +5,7 @@ using System.Diagnostics;
 using System.Linq;
 using chess_engine.Bots;
 using chess_engine.Engine;
+using chess_engine.Enums;
 using chess_engine.Helpers;
 using chess_engine.Models;
 using chess_ui.Helpers;
@@ -127,6 +128,7 @@ namespace chess_ui.ViewModels
             var (b, m) = Board.FromStartPosition(StartPosition);
             _board = b;
             _legalMoves = m;
+            GameStatus = GameStatus.Playing;
             SetProperties();
 
             foreach (var sq in Squares)
@@ -263,8 +265,8 @@ namespace chess_ui.ViewModels
             _legalMoves = MoveGenerator.GenerateLegalMoves(_board);
             SyncFromBoard();
             SetProperties();
-
-            if (HalfMoveClock >= 50)
+            
+            if (_board.GetResult(_legalMoves.Count) != GameResult.Ongoing)
             {
                 SetGameOver();
                 return;
