@@ -8,7 +8,7 @@ namespace chess_engine.Engine
     // Produced once by Compute(), consumed by the legal-move generator and IsInCheck.
     public class AttackData
     {
-        private static readonly bool d = true;
+        private static readonly bool d = false;
 
         // Squares the opponent attacks. Sliders X-ray THROUGH our king only, so
         // the square immediately "behind" our king along an attacking ray is

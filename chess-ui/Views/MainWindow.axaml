@@ -9,7 +9,7 @@
     xmlns:vm="using:chess_ui.ViewModels"
     x:Name="mainWnd"
     Title="chess_ui"
-    Width="800"
+    Width="880"
     Height="880"
     x:DataType="vm:BoardViewModel"
     Background="WhiteSmoke"
@@ -27,6 +27,7 @@
         <converters:IsInCollectionConverter x:Key="IsInCollectionConverter" />
         <converters:BitWiseAndConvertMulti x:Key="BitWiseAndConvertMulti" />
         <converters:NumbersEqualConverterMulti x:Key="NumbersEqualConverterMulti" />
+        <converters:CentipawnsToGridLengthConverter x:Key="CentipawnsToGridLengthConverter" />
     </Window.Resources>
 
     <Design.DataContext>
@@ -38,361 +39,382 @@
     </Design.DataContext>
     <Panel>
         <DockPanel>
-        <Menu DockPanel.Dock="Top">
-            <MenuItem Header="Game">
-                <MenuItem Command="{Binding NewGameCommand}" Header="_New Game" />
-                <Separator />
-                <MenuItem Command="{Binding UndoMoveCommand}" Header="Unmake" />
-            </MenuItem>
-            <MenuItem Header="Testing">
-                <MenuItem Header="Perft">
-                    <MenuItem Header="Start position">
-                        <MenuItem
-                            Command="{Binding RunPerftCommand}"
-                            CommandParameter="start 1"
-                            Header="1" />
-                        <MenuItem
-                            Command="{Binding RunPerftCommand}"
-                            CommandParameter="start 2"
-                            Header="2" />
-                        <MenuItem
-                            Command="{Binding RunPerftCommand}"
-                            CommandParameter="start 3"
-                            Header="3" />
-                        <MenuItem
-                            Command="{Binding RunPerftCommand}"
-                            CommandParameter="start 4"
-                            Header="4" />
-                        <MenuItem
-                            Command="{Binding RunPerftCommand}"
-                            CommandParameter="start 5"
-                            Header="5" />
-                        <MenuItem
-                            Command="{Binding RunPerftCommand}"
-                            CommandParameter="start 6"
-                            Header="6" />
-                    </MenuItem>
-                    <MenuItem Header="Kiwipete">
-                        <MenuItem
-                            Command="{Binding RunPerftCommand}"
-                            CommandParameter="kiwipete 1"
-                            Header="1" />
-                        <MenuItem
-                            Command="{Binding RunPerftCommand}"
-                            CommandParameter="kiwipete 2"
-                            Header="2" />
-                        <MenuItem
-                            Command="{Binding RunPerftCommand}"
-                            CommandParameter="kiwipete 3"
-                            Header="3" />
-                        <MenuItem
-                            Command="{Binding RunPerftCommand}"
-                            CommandParameter="kiwipete 4"
-                            Header="4" />
-                    </MenuItem>
-                    <MenuItem Header="Position 3">
-                        <MenuItem
-                            Command="{Binding RunPerftCommand}"
-                            CommandParameter="position3 1"
-                            Header="1" />
-                        <MenuItem
-                            Command="{Binding RunPerftCommand}"
-                            CommandParameter="position3 2"
-                            Header="2" />
-                        <MenuItem
-                            Command="{Binding RunPerftCommand}"
-                            CommandParameter="position3 3"
-                            Header="3" />
-                        <MenuItem
-                            Command="{Binding RunPerftCommand}"
-                            CommandParameter="position3 4"
-                            Header="4" />
-                        <MenuItem
-                            Command="{Binding RunPerftCommand}"
-                            CommandParameter="position3 5"
-                            Header="5" />
+            <Menu DockPanel.Dock="Top" Background="Snow">
+                <MenuItem Header="Game">
+                    <MenuItem Command="{Binding NewGameCommand}" Header="_New Game" />
+                    <Separator />
+                    <MenuItem Command="{Binding UndoMoveCommand}" Header="Unmake" />
+                </MenuItem>
+                <MenuItem Header="Testing">
+                    <MenuItem Header="Perft">
+                        <MenuItem Header="Start position">
+                            <MenuItem
+                                Command="{Binding RunPerftCommand}"
+                                CommandParameter="start 1"
+                                Header="1" />
+                            <MenuItem
+                                Command="{Binding RunPerftCommand}"
+                                CommandParameter="start 2"
+                                Header="2" />
+                            <MenuItem
+                                Command="{Binding RunPerftCommand}"
+                                CommandParameter="start 3"
+                                Header="3" />
+                            <MenuItem
+                                Command="{Binding RunPerftCommand}"
+                                CommandParameter="start 4"
+                                Header="4" />
+                            <MenuItem
+                                Command="{Binding RunPerftCommand}"
+                                CommandParameter="start 5"
+                                Header="5" />
+                            <MenuItem
+                                Command="{Binding RunPerftCommand}"
+                                CommandParameter="start 6"
+                                Header="6" />
+                        </MenuItem>
+                        <MenuItem Header="Kiwipete">
+                            <MenuItem
+                                Command="{Binding RunPerftCommand}"
+                                CommandParameter="kiwipete 1"
+                                Header="1" />
+                            <MenuItem
+                                Command="{Binding RunPerftCommand}"
+                                CommandParameter="kiwipete 2"
+                                Header="2" />
+                            <MenuItem
+                                Command="{Binding RunPerftCommand}"
+                                CommandParameter="kiwipete 3"
+                                Header="3" />
+                            <MenuItem
+                                Command="{Binding RunPerftCommand}"
+                                CommandParameter="kiwipete 4"
+                                Header="4" />
+                        </MenuItem>
+                        <MenuItem Header="Position 3">
+                            <MenuItem
+                                Command="{Binding RunPerftCommand}"
+                                CommandParameter="position3 1"
+                                Header="1" />
+                            <MenuItem
+                                Command="{Binding RunPerftCommand}"
+                                CommandParameter="position3 2"
+                                Header="2" />
+                            <MenuItem
+                                Command="{Binding RunPerftCommand}"
+                                CommandParameter="position3 3"
+                                Header="3" />
+                            <MenuItem
+                                Command="{Binding RunPerftCommand}"
+                                CommandParameter="position3 4"
+                                Header="4" />
+                            <MenuItem
+                                Command="{Binding RunPerftCommand}"
+                                CommandParameter="position3 5"
+                                Header="5" />
+                        </MenuItem>
                     </MenuItem>
                 </MenuItem>
-            </MenuItem>
-            <MenuItem Header="Bots">
-                <MenuItem
-                    Header="Is black a bot"
-                    IsChecked="{Binding IsBlackBot, Mode=TwoWay}"
-                    ToggleType="CheckBox" />
-                <MenuItem
-                    Header="Is white a bot"
-                    IsChecked="{Binding IsWhiteBot, Mode=TwoWay}"
-                    ToggleType="CheckBox" />
-            </MenuItem>
-            <MenuItem Header="Debugging">
-                <MenuItem
-                    Header="Highlight attacked Sqaures"
-                    IsChecked="{Binding HighlightAttackedSquares, Mode=TwoWay}"
-                    ToggleType="CheckBox" />
-                <MenuItem
-                    Header="Highlight pinned Squares"
-                    IsChecked="{Binding HighlightPinnedSquares, Mode=TwoWay}"
-                    ToggleType="CheckBox" />
-                <MenuItem
-                    Header="Highlight check Squares"
-                    IsChecked="{Binding HighlightCheckSquares, Mode=TwoWay}"
-                    ToggleType="CheckBox" />
+                <MenuItem Header="Bots">
                     <MenuItem
-                    Header="Highlight king Squares"
-                    IsChecked="{Binding HighlightKingSquares, Mode=TwoWay}"
-                    ToggleType="CheckBox" />
-            </MenuItem>
-        </Menu>
+                        Header="Is black a bot"
+                        IsChecked="{Binding IsBlackBot, Mode=TwoWay}"
+                        ToggleType="CheckBox" />
+                    <MenuItem
+                        Header="Is white a bot"
+                        IsChecked="{Binding IsWhiteBot, Mode=TwoWay}"
+                        ToggleType="CheckBox" />
+                </MenuItem>
+                <MenuItem Header="Debugging">
+                    <MenuItem
+                        Header="Highlight attacked Sqaures"
+                        IsChecked="{Binding HighlightAttackedSquares, Mode=TwoWay}"
+                        ToggleType="CheckBox" />
+                    <MenuItem
+                        Header="Highlight pinned Squares"
+                        IsChecked="{Binding HighlightPinnedSquares, Mode=TwoWay}"
+                        ToggleType="CheckBox" />
+                    <MenuItem
+                        Header="Highlight check Squares"
+                        IsChecked="{Binding HighlightCheckSquares, Mode=TwoWay}"
+                        ToggleType="CheckBox" />
+                        <MenuItem
+                        Header="Highlight king Squares"
+                        IsChecked="{Binding HighlightKingSquares, Mode=TwoWay}"
+                        ToggleType="CheckBox" />
+                </MenuItem>
+            </Menu>
 
-        <WrapPanel
-            Margin="4"
-            DockPanel.Dock="Bottom"
-            Orientation="Horizontal">
-            <TextBlock Text="Castling Rights: " />
-            <TextBlock Text="{Binding CastlingRights, Converter={StaticResource CastlingRightsConverter}}" />
-            <TextBlock Text=" | " />
-            <TextBlock Text="EnPassant Square: " />
-            <TextBlock Text="{Binding EnPassantSquare}" />
-            <TextBlock Text=" | " />
-            <TextBlock Text="Full Moves: " />
-            <TextBlock Text="{Binding FullMoveNumber}" />
-            <TextBlock Text=" | " />
-            <TextBlock Text="HM Clock: " />
-            <TextBlock Text="{Binding HalfMoveClock}" />
-        </WrapPanel>
+            <!-- Bottom Info Bar -->
+            <WrapPanel
+                Margin="4"
+                DockPanel.Dock="Bottom"
+                Orientation="Horizontal"
+                Background="Snow">
+                <TextBlock Text="Castling Rights: " />
+                <TextBlock Text="{Binding CastlingRights, Converter={StaticResource CastlingRightsConverter}}" />
+                <TextBlock Text=" | " />
+                <TextBlock Text="EnPassant Square: " />
+                <TextBlock Text="{Binding EnPassantSquare}" />
+                <TextBlock Text=" | " />
+                <TextBlock Text="Full Moves: " />
+                <TextBlock Text="{Binding FullMoveNumber}" />
+                <TextBlock Text=" | " />
+                <TextBlock Text="HM Clock: " />
+                <TextBlock Text="{Binding HalfMoveClock}" />
+            </WrapPanel>
 
-        <Panel>
-            <Grid ColumnDefinitions="80,Auto,80" RowDefinitions="80,Auto,80">
-                <ItemsControl
-                    Grid.Row="0"
-                    Grid.Column="1"
-                    ItemsSource="{Binding Files}">
-                    <ItemsControl.ItemsPanel>
-                        <ItemsPanelTemplate>
-                            <StackPanel Orientation="Horizontal" />
-                        </ItemsPanelTemplate>
-                    </ItemsControl.ItemsPanel>
-                    <ItemsControl.ItemTemplate>
-                        <DataTemplate>
-                            <Border Width="80" Height="80">
-                                <TextBlock
-                                    HorizontalAlignment="Center"
-                                    VerticalAlignment="Center"
-                                    Foreground="Black"
-                                    Text="{Binding}" />
-                            </Border>
-                        </DataTemplate>
-                    </ItemsControl.ItemTemplate>
-                </ItemsControl>
-
-                <ItemsControl
-                    Grid.Row="1"
-                    Grid.Column="0"
-                    ItemsSource="{Binding Ranks}">
-                    <ItemsControl.ItemsPanel>
-                        <ItemsPanelTemplate>
-                            <StackPanel Orientation="Vertical" />
-                        </ItemsPanelTemplate>
-                    </ItemsControl.ItemsPanel>
-                    <ItemsControl.ItemTemplate>
-                        <DataTemplate>
-                            <Border Width="80" Height="80">
-                                <TextBlock
-                                    HorizontalAlignment="Center"
-                                    VerticalAlignment="Center"
-                                    Foreground="Black"
-                                    Text="{Binding}" />
-                            </Border>
-                        </DataTemplate>
-                    </ItemsControl.ItemTemplate>
-                </ItemsControl>
-
-                <!--  Board  -->
-                <ItemsControl
-                    x:Name="BoardItems"
-                    Grid.Row="1"
-                    Grid.Column="1"
-                    DataContextChanged="BoardItems_DataContextChanged"
-                    ItemsSource="{Binding Squares}">
-                    <ItemsControl.ItemsPanel>
-                        <ItemsPanelTemplate>
-                            <UniformGrid Columns="8" Rows="8" />
-                        </ItemsPanelTemplate>
-                    </ItemsControl.ItemsPanel>
-
-                    <ItemsControl.ItemTemplate>
-                        <DataTemplate>
-                            <Border Background="{Binding IsLight, Converter={StaticResource SquareBackgroundConverter}, Mode=OneWay}" PointerPressed="OnPointerPressed">
-                                <Grid>
-                                    <Grid IsVisible="{Binding $parent[ItemsControl].((vm:BoardViewModel)DataContext).HighlightAttackedSquares}">
-                                        <Border
-                                            Background="Aqua"
-                                            IsHitTestVisible="False"
-                                            Opacity="0.55">
-                                            <Border.IsVisible>
-                                                <MultiBinding Converter="{StaticResource BitWiseAndConvertMulti}">
-                                                    <Binding Path="EngineIndex" />
-                                                    <Binding Path="$parent[ItemsControl].((vm:BoardViewModel)DataContext).AttackedSquares" />
-                                                </MultiBinding>
-                                            </Border.IsVisible>
-                                        </Border>
-                                    </Grid>
-                                    <Border
-                                        Background="#175802"
-                                        IsHitTestVisible="False"
-                                        IsVisible="{Binding IsHighlighted}"
-                                        Opacity="0.6" />
-                                    <Border
-                                        Background="#4d4991"
-                                        IsHitTestVisible="False"
-                                        IsVisible="{Binding IsSelected}"
-                                        Opacity="0.75" />
-                                    <Grid IsVisible="{Binding $parent[ItemsControl].((vm:BoardViewModel)DataContext).HighlightPinnedSquares}">
-                                        <Border
-                                            Background="#ad06b3"
-                                            IsHitTestVisible="False"
-                                            Opacity="0.85">
-                                            <Border.IsVisible>
-                                                <MultiBinding Converter="{StaticResource BitWiseAndConvertMulti}">
-                                                    <Binding Path="EngineIndex" />
-                                                    <Binding Path="$parent[ItemsControl].((vm:BoardViewModel)DataContext).PinnedSquares" />
-                                                </MultiBinding>
-                                            </Border.IsVisible>
-                                        </Border>
-                                    </Grid>
-                                    <Grid IsVisible="{Binding $parent[ItemsControl].((vm:BoardViewModel)DataContext).HighlightKingSquares}">
-                                        <Border
-                                            Background="#170b0b"
-                                            IsHitTestVisible="False"
-                                            Opacity="0.85">
-                                            <Border.IsVisible>
-                                                <MultiBinding Converter="{StaticResource NumbersEqualConverterMulti}">
-                                                    <Binding Path="EngineIndex" />
-                                                    <Binding Path="$parent[ItemsControl].((vm:BoardViewModel)DataContext).KingSquareBlack" />
-                                                </MultiBinding>
-                                            </Border.IsVisible>
-                                        </Border>
-                                    </Grid>
-                                    <Grid IsVisible="{Binding $parent[ItemsControl].((vm:BoardViewModel)DataContext).HighlightKingSquares}">
-                                        <Border
-                                            Background="#b6b2b2"
-                                            IsHitTestVisible="False"
-                                            Opacity="0.85">
-                                            <Border.IsVisible>
-                                                <MultiBinding Converter="{StaticResource NumbersEqualConverterMulti}">
-                                                    <Binding Path="EngineIndex" />
-                                                    <Binding Path="$parent[ItemsControl].((vm:BoardViewModel)DataContext).KingSquareWhite" />
-                                                </MultiBinding>
-                                            </Border.IsVisible>
-                                        </Border>
-                                    </Grid>
-                                    <Grid IsVisible="{Binding $parent[ItemsControl].((vm:BoardViewModel)DataContext).HighlightCheckSquares}">
-                                        <Border
-                                            Background="#15a4d4"
-                                            IsHitTestVisible="False"
-                                            Opacity="0.85">
-                                            <Border.IsVisible>
-                                                <MultiBinding Converter="{StaticResource BitWiseAndConvertMulti}">
-                                                    <Binding Path="EngineIndex" />
-                                                    <Binding Path="$parent[ItemsControl].((vm:BoardViewModel)DataContext).CheckSquares" />
-                                                </MultiBinding>
-                                            </Border.IsVisible>
-                                        </Border>
-                                    </Grid>
+            <Panel>
+                <Grid ColumnDefinitions="80,24,Auto,80" RowDefinitions="80,Auto,80" Background="AntiqueWhite">
+                    <!-- Files Top-->
+                    <ItemsControl
+                        Grid.Row="0"
+                        Grid.Column="2"
+                        ItemsSource="{Binding Files}">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <StackPanel Orientation="Horizontal" />
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Border Width="80" Height="80">
                                     <TextBlock
-                                        HorizontalAlignment="Left"
-                                        VerticalAlignment="Bottom"
-                                        Foreground="Green"
-                                        Text="{Binding EngineIndex}" />
-                                    <Image
-                                        Width="64"
-                                        Height="64"
-                                        IsHitTestVisible="False"
-                                        Opacity="{Binding IsGhost, Converter={StaticResource BoolToOpacityConverter}}"
-                                        Source="{Binding Piece, Converter={StaticResource PieceToImageConverter}, Mode=OneWay}" />
-                                    <Ellipse
-                                        Width="32"
-                                        Height="32"
-                                        Fill="#4d4991"
-                                        IsVisible="{Binding IsValidMoveTarget}"
-                                        Opacity="0.75" />
-                                </Grid>
-                            </Border>
-                        </DataTemplate>
-                    </ItemsControl.ItemTemplate>
-                </ItemsControl>
+                                        HorizontalAlignment="Center"
+                                        VerticalAlignment="Center"
+                                        Foreground="Black"
+                                        Text="{Binding}" />
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                    
+                    <!-- Ranks Left-->
+                    <ItemsControl
+                        Grid.Row="1"
+                        Grid.Column="0"
+                        ItemsSource="{Binding Ranks}">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <StackPanel Orientation="Vertical" />
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Border Width="80" Height="80">
+                                    <TextBlock
+                                        HorizontalAlignment="Center"
+                                        VerticalAlignment="Center"
+                                        Foreground="Black"
+                                        Text="{Binding}" />
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
 
+                    <!-- Evaluation Bar -->
+                    <Grid Grid.Column="1" Grid.Row="1">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="{Binding EvaluationCentipawns, 
+                                                    Converter={StaticResource CentipawnsToGridLengthConverter},
+                                                    ConverterParameter=black}"></RowDefinition>
+                            <RowDefinition Height="{Binding EvaluationCentipawns, 
+                                                    Converter={StaticResource CentipawnsToGridLengthConverter},
+                                                    ConverterParameter=white}"></RowDefinition>
+                        </Grid.RowDefinitions>    
+                        
+                        <Border Grid.Row="0" Background="Black" />
+                        <Border Grid.Row="1" Background="White" />
+                    </Grid>
 
-                <ItemsControl
-                    Grid.Row="1"
-                    Grid.Column="2"
-                    ItemsSource="{Binding Ranks}">
-                    <ItemsControl.ItemsPanel>
-                        <ItemsPanelTemplate>
-                            <StackPanel Orientation="Vertical" />
-                        </ItemsPanelTemplate>
-                    </ItemsControl.ItemsPanel>
-                    <ItemsControl.ItemTemplate>
-                        <DataTemplate>
-                            <Border Width="80" Height="80">
-                                <TextBlock
-                                    HorizontalAlignment="Center"
-                                    VerticalAlignment="Center"
-                                    Foreground="Black"
-                                    Text="{Binding}" />
-                            </Border>
-                        </DataTemplate>
-                    </ItemsControl.ItemTemplate>
-                </ItemsControl>
+                    <!-- Board -->
+                    <ItemsControl
+                        x:Name="BoardItems"
+                        Grid.Row="1"
+                        Grid.Column="2"
+                        DataContextChanged="BoardItems_DataContextChanged"
+                        ItemsSource="{Binding Squares}">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <UniformGrid Columns="8" Rows="8" />
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
 
-                <ItemsControl
-                    Grid.Row="2"
-                    Grid.Column="1"
-                    ItemsSource="{Binding Files}">
-                    <ItemsControl.ItemsPanel>
-                        <ItemsPanelTemplate>
-                            <StackPanel Orientation="Horizontal" />
-                        </ItemsPanelTemplate>
-                    </ItemsControl.ItemsPanel>
-                    <ItemsControl.ItemTemplate>
-                        <DataTemplate>
-                            <Border Width="80" Height="80">
-                                <TextBlock
-                                    HorizontalAlignment="Center"
-                                    VerticalAlignment="Center"
-                                    Foreground="Black"
-                                    Text="{Binding}" />
-                            </Border>
-                        </DataTemplate>
-                    </ItemsControl.ItemTemplate>
-                </ItemsControl>
-            </Grid>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Border Background="{Binding IsLight, Converter={StaticResource SquareBackgroundConverter}, Mode=OneWay}" PointerPressed="OnPointerPressed">
+                                    <Grid>
+                                        <Grid IsVisible="{Binding $parent[ItemsControl].((vm:BoardViewModel)DataContext).HighlightAttackedSquares}">
+                                            <Border
+                                                Background="Aqua"
+                                                IsHitTestVisible="False"
+                                                Opacity="0.55">
+                                                <Border.IsVisible>
+                                                    <MultiBinding Converter="{StaticResource BitWiseAndConvertMulti}">
+                                                        <Binding Path="EngineIndex" />
+                                                        <Binding Path="$parent[ItemsControl].((vm:BoardViewModel)DataContext).AttackedSquares" />
+                                                    </MultiBinding>
+                                                </Border.IsVisible>
+                                            </Border>
+                                        </Grid>
+                                        <Border
+                                            Background="#175802"
+                                            IsHitTestVisible="False"
+                                            IsVisible="{Binding IsHighlighted}"
+                                            Opacity="0.6" />
+                                        <Border
+                                            Background="#4d4991"
+                                            IsHitTestVisible="False"
+                                            IsVisible="{Binding IsSelected}"
+                                            Opacity="0.75" />
+                                        <Grid IsVisible="{Binding $parent[ItemsControl].((vm:BoardViewModel)DataContext).HighlightPinnedSquares}">
+                                            <Border
+                                                Background="#ad06b3"
+                                                IsHitTestVisible="False"
+                                                Opacity="0.85">
+                                                <Border.IsVisible>
+                                                    <MultiBinding Converter="{StaticResource BitWiseAndConvertMulti}">
+                                                        <Binding Path="EngineIndex" />
+                                                        <Binding Path="$parent[ItemsControl].((vm:BoardViewModel)DataContext).PinnedSquares" />
+                                                    </MultiBinding>
+                                                </Border.IsVisible>
+                                            </Border>
+                                        </Grid>
+                                        <Grid IsVisible="{Binding $parent[ItemsControl].((vm:BoardViewModel)DataContext).HighlightKingSquares}">
+                                            <Border
+                                                Background="#170b0b"
+                                                IsHitTestVisible="False"
+                                                Opacity="0.85">
+                                                <Border.IsVisible>
+                                                    <MultiBinding Converter="{StaticResource NumbersEqualConverterMulti}">
+                                                        <Binding Path="EngineIndex" />
+                                                        <Binding Path="$parent[ItemsControl].((vm:BoardViewModel)DataContext).KingSquareBlack" />
+                                                    </MultiBinding>
+                                                </Border.IsVisible>
+                                            </Border>
+                                        </Grid>
+                                        <Grid IsVisible="{Binding $parent[ItemsControl].((vm:BoardViewModel)DataContext).HighlightKingSquares}">
+                                            <Border
+                                                Background="#b6b2b2"
+                                                IsHitTestVisible="False"
+                                                Opacity="0.85">
+                                                <Border.IsVisible>
+                                                    <MultiBinding Converter="{StaticResource NumbersEqualConverterMulti}">
+                                                        <Binding Path="EngineIndex" />
+                                                        <Binding Path="$parent[ItemsControl].((vm:BoardViewModel)DataContext).KingSquareWhite" />
+                                                    </MultiBinding>
+                                                </Border.IsVisible>
+                                            </Border>
+                                        </Grid>
+                                        <Grid IsVisible="{Binding $parent[ItemsControl].((vm:BoardViewModel)DataContext).HighlightCheckSquares}">
+                                            <Border
+                                                Background="#15a4d4"
+                                                IsHitTestVisible="False"
+                                                Opacity="0.85">
+                                                <Border.IsVisible>
+                                                    <MultiBinding Converter="{StaticResource BitWiseAndConvertMulti}">
+                                                        <Binding Path="EngineIndex" />
+                                                        <Binding Path="$parent[ItemsControl].((vm:BoardViewModel)DataContext).CheckSquares" />
+                                                    </MultiBinding>
+                                                </Border.IsVisible>
+                                            </Border>
+                                        </Grid>
+                                        <TextBlock
+                                            HorizontalAlignment="Left"
+                                            VerticalAlignment="Bottom"
+                                            Foreground="Green"
+                                            Text="{Binding EngineIndex}" />
+                                        <Image
+                                            Width="64"
+                                            Height="64"
+                                            IsHitTestVisible="False"
+                                            Opacity="{Binding IsGhost, Converter={StaticResource BoolToOpacityConverter}}"
+                                            Source="{Binding Piece, Converter={StaticResource PieceToImageConverter}, Mode=OneWay}" />
+                                        <Ellipse
+                                            Width="32"
+                                            Height="32"
+                                            Fill="#4d4991"
+                                            IsVisible="{Binding IsValidMoveTarget}"
+                                            Opacity="0.75" />
+                                    </Grid>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
 
-            <!--  Game-over overlay  -->
-            <Panel Background="#AA000000" IsVisible="{Binding GameStatus, Converter={StaticResource IsNotPlayingConverter}}">
-                <Border
-                    Padding="40"
-                    HorizontalAlignment="Center"
-                    VerticalAlignment="Center"
-                    Background="White"
-                    CornerRadius="12">
-                    <StackPanel HorizontalAlignment="Center" Spacing="16">
-                        <TextBlock
-                            HorizontalAlignment="Center"
-                            FontSize="24"
-                            FontWeight="Bold"
-                            Foreground="Black"
-                            Text="{Binding GameOverMessage}" />
-                        <Button
-                            HorizontalAlignment="Center"
-                            Command="{Binding NewGameCommand}"
-                            Content="New Game"
-                            Foreground="Black" />
-                    </StackPanel>
-                </Border>
+                    <!-- Ranks Right-->
+                    <ItemsControl
+                        Grid.Row="1"
+                        Grid.Column="3"
+                        ItemsSource="{Binding Ranks}">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <StackPanel Orientation="Vertical" />
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Border Width="80" Height="80">
+                                    <TextBlock
+                                        HorizontalAlignment="Center"
+                                        VerticalAlignment="Center"
+                                        Foreground="Black"
+                                        Text="{Binding}" />
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+
+                    <!-- Files Bottom -->
+                    <ItemsControl
+                        Grid.Row="2"
+                        Grid.Column="2"
+                        ItemsSource="{Binding Files}">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <StackPanel Orientation="Horizontal" />
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Border Width="80" Height="80">
+                                    <TextBlock
+                                        HorizontalAlignment="Center"
+                                        VerticalAlignment="Center"
+                                        Foreground="Black"
+                                        Text="{Binding}" />
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </Grid>
+
+                <!--  Game-over overlay  -->
+                <Panel Background="#AA000000" IsVisible="{Binding GameStatus, Converter={StaticResource IsNotPlayingConverter}}">
+                    <Border
+                        Padding="40"
+                        HorizontalAlignment="Center"
+                        VerticalAlignment="Center"
+                        Background="White"
+                        CornerRadius="12">
+                        <StackPanel HorizontalAlignment="Center" Spacing="16">
+                            <TextBlock
+                                HorizontalAlignment="Center"
+                                FontSize="24"
+                                FontWeight="Bold"
+                                Foreground="Black"
+                                Text="{Binding GameOverMessage}" />
+                            <Button
+                                HorizontalAlignment="Center"
+                                Command="{Binding NewGameCommand}"
+                                Content="New Game"
+                                Foreground="Black" />
+                        </StackPanel>
+                    </Border>
+                </Panel>
             </Panel>
-        </Panel>
         </DockPanel>
+
         <Canvas x:Name="GhostLayer" IsHitTestVisible="False" />
     </Panel>
 </Window>

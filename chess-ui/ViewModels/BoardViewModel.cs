@@ -25,6 +25,7 @@ namespace chess_ui.ViewModels
         private Board _board;
         private Move? _pendingPromotionMove;
         private List<Move> _legalMoves;
+        private IBot _bot;
 
         public string[] Ranks { get; } // rows        
         public string[] Files { get; } // columns
@@ -55,6 +56,8 @@ namespace chess_ui.ViewModels
             PinnedSquares = 0UL;
             CheckSquares = 0UL;
 
+            _bot = new SimpleBot();
+            
             NewGame();
         }
 
@@ -118,6 +121,9 @@ namespace chess_ui.ViewModels
         [ObservableProperty]
         private bool _highlightKingSquares = true;
 
+        [ObservableProperty]
+        private int _evaluationCentipawns;
+
         #endregion
 
         #region Commands
@@ -125,9 +131,9 @@ namespace chess_ui.ViewModels
         [RelayCommand]
         private void NewGame()
         {
-            var (b, m) = Board.FromStartPosition(StartPosition);
-            _board = b;
-            _legalMoves = m;
+            var (board, moves) = Board.FromStartPosition(StartPosition);
+            _board = board;
+            _legalMoves = moves;
             GameStatus = GameStatus.Playing;
             SetProperties();
 
@@ -288,7 +294,7 @@ namespace chess_ui.ViewModels
 
             Avalonia.Threading.Dispatcher.UIThread.Post(() =>
             {
-                var move = RandomBot.PickMove(_legalMoves);
+                var move = _bot.PickMove(_board, _legalMoves);
 
                 if (move is null)
                 {
@@ -315,6 +321,10 @@ namespace chess_ui.ViewModels
             CheckSquares = _board.AttackData?.CheckBlockMask ?? 0UL;
             KingSquareWhite = _board.KingSquareWhite;
             KingSquareBlack = _board.KingSquareBlack;
+
+            int raw = Evaluation.Evaluate(_board);                                                                                                                                                                                                    
+            int perspective = _board.ColorToMove == Piece.White ? 1 : -1;
+            EvaluationCentipawns = raw * perspective; // now white-relative   
         }
 
         private void SetGameOver()

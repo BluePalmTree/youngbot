@@ -2,11 +2,11 @@ using chess_engine.Models;
 
 namespace chess_engine.Bots
 {
-    public static class RandomBot
+    public class RandomBot : IBot
     {
-        private static readonly Random rng = new();
+        private readonly Random rng = new();
 
-        public static Move? PickMove(List<Move> moves)
+        public Move? PickMove(Board board, List<Move> moves)
         {            
             if (moves.Count == 0)
                 return null;

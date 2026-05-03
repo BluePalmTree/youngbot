@@ -357,7 +357,7 @@ namespace chess_engine.Models
 
             if (legalMovesCount == 0)
             {
-                // No legal moves: checkmate iff in check, stalemate otherwise. No third case.
+                // No legal moves: checkmate if in check, stalemate otherwise. No third case.
                 if (inCheck)
                     return ColorToMove == Piece.White ? GameResult.BlackWins : GameResult.WhiteWins;
                 return GameResult.Draw;
